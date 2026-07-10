@@ -39,6 +39,7 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -48,7 +49,7 @@ import net.runelite.client.util.HotkeyListener;
 @Slf4j
 @PluginDescriptor(
 	name = "Tempoross Solo Helper",
-	description = "Quest-style guidance for the solo Tempoross route",
+	description = "Quest-style guidance for selectable solo Tempoross methods",
 	tags = {"tempoross", "solo", "fishing", "helper"}
 )
 public class TemporossSoloHelperPlugin extends Plugin
@@ -93,7 +94,10 @@ public class TemporossSoloHelperPlugin extends Plugin
 		NpcID.TEMPOROSS_INSTANCE_HOST_S_VICTORY);
 
 	static final Set<Integer> FIRE_OBJECT_IDS = Set.of(ObjectID.TEMPOROSS_FIRE_VISUALS);
-	private static final Set<Integer> TRACKED_OBJECT_IDS = Set.of(ObjectID.TEMPOROSS_FIRE_VISUALS);
+	static final Set<Integer> COOKING_SHRINE_IDS = Set.of(ObjectID.TEMPOROSS_SHRINE_FIRE);
+	private static final Set<Integer> TRACKED_OBJECT_IDS = Set.of(
+		ObjectID.TEMPOROSS_FIRE_VISUALS,
+		ObjectID.TEMPOROSS_SHRINE_FIRE);
 
 	@Inject
 	private Client client;
@@ -125,10 +129,16 @@ public class TemporossSoloHelperPlugin extends Plugin
 	private boolean defeated;
 	private int missingHudTicks;
 	private int workingSideCandidateTick = -1;
+	private int lastLoadActivityTick = -1;
+	private boolean loadInteractionActive;
 	private RouteSnapshot snapshot = new RouteSnapshot(
+		0,
+		0,
 		0,
 		TemporossRoute.FIRST_FISH_TARGET,
 		null,
+		false,
+		false,
 		false,
 		false);
 
@@ -168,6 +178,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		route.setMethod(config.method());
 		overlayManager.add(panelOverlay);
 		overlayManager.add(sceneOverlay);
 		keyManager.registerKeyListener(nextStepListener);
@@ -175,6 +186,28 @@ public class TemporossSoloHelperPlugin extends Plugin
 		keyManager.registerKeyListener(resetRouteListener);
 		clientThread.invoke(this::checkEncounterState);
 		log.debug("Tempoross Solo Helper started");
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		if (!TemporossSoloHelperConfig.GROUP.equals(event.getGroup())
+			|| !"method".equals(event.getKey()))
+		{
+			return;
+		}
+
+		clientThread.invoke(() ->
+		{
+			route.setMethod(config.method());
+			resetWorkingSide();
+			refreshAmmunitionCrateLocations();
+			if (inEncounter)
+			{
+				snapshot = buildSnapshot();
+			}
+			log.debug("Tempoross method changed to {}; route reset", route.getMethod());
+		});
 	}
 
 	@Override
@@ -200,11 +233,11 @@ public class TemporossSoloHelperPlugin extends Plugin
 
 		updateWorkingSideFromInteraction();
 		RouteStage stageBeforeUpdate = route.getStage();
-		int fishBeforeUpdate = snapshot.getFish();
+		int fishBeforeUpdate = snapshot.getTotalFish();
 		snapshot = buildSnapshot();
 		if (!isWorkingSideKnown()
 			&& isLoadStage(stageBeforeUpdate)
-			&& snapshot.getFish() < fishBeforeUpdate)
+			&& snapshot.getTotalFish() < fishBeforeUpdate)
 		{
 			confirmWorkingSideFromLoad();
 			snapshot = buildSnapshot();
@@ -212,6 +245,10 @@ public class TemporossSoloHelperPlugin extends Plugin
 		if (config.autoAdvance())
 		{
 			route.update(snapshot);
+		}
+		if (!isLoadStage(route.getStage()))
+		{
+			loadInteractionActive = false;
 		}
 	}
 
@@ -267,13 +304,18 @@ public class TemporossSoloHelperPlugin extends Plugin
 		}
 
 		NPC npc = event.getMenuEntry().getNpc();
-		if (!isWorkingSideKnown()
-			&& isLoadStage(route.getStage())
+		boolean loadClick = isLoadStage(route.getStage())
 			&& npc != null
 			&& AMMUNITION_CRATE_IDS.contains(npc.getId())
-			&& "Load".equalsIgnoreCase(event.getMenuOption()))
+			&& "Load".equalsIgnoreCase(event.getMenuOption());
+		loadInteractionActive = loadClick;
+		if (loadClick)
 		{
-			observeWorkingSideCandidate(npc);
+			lastLoadActivityTick = client.getTickCount();
+			if (!isWorkingSideKnown())
+			{
+				observeWorkingSideCandidate(npc);
+			}
 		}
 	}
 
@@ -281,12 +323,16 @@ public class TemporossSoloHelperPlugin extends Plugin
 	public void onChatMessage(ChatMessage event)
 	{
 		if (inEncounter
-			&& !isWorkingSideKnown()
 			&& isLoadStage(route.getStage())
 			&& event.getType() == ChatMessageType.GAMEMESSAGE
 			&& event.getMessage().toLowerCase().contains(LOAD_STARTED_MESSAGE))
 		{
-			confirmWorkingSideFromLoad();
+			lastLoadActivityTick = client.getTickCount();
+			loadInteractionActive = true;
+			if (!isWorkingSideKnown())
+			{
+				confirmWorkingSideFromLoad();
+			}
 		}
 	}
 
@@ -315,9 +361,29 @@ public class TemporossSoloHelperPlugin extends Plugin
 		return route.getStage();
 	}
 
-	RouteSnapshot getSnapshot()
+	RouteTarget getTarget()
 	{
-		return snapshot;
+		return route.getTarget(snapshot);
+	}
+
+	TemporossMethod getMethod()
+	{
+		return route.getMethod();
+	}
+
+	int getStageNumber()
+	{
+		return route.getStageNumber();
+	}
+
+	int getStageCount()
+	{
+		return route.getStageCount();
+	}
+
+	int getTripCount()
+	{
+		return route.getTripCount();
 	}
 
 	Set<GameObject> getTrackedObjects()
@@ -335,29 +401,94 @@ public class TemporossSoloHelperPlugin extends Plugin
 		switch (route.getStage())
 		{
 			case CATCH_26:
-				return snapshot.getFish() + " / " + TemporossRoute.getFirstFishTarget(snapshot) + " fish";
+				return snapshot.getTotalFish() + " / " + TemporossRoute.getFirstFishTarget(snapshot) + " fish";
 			case LOAD_26:
 			case LOAD_27_FIRST:
 			case LOAD_REMAINDER:
 			case LOAD_FINAL:
-				return snapshot.getFish() + " fish left";
+				return snapshot.getTotalFish() + " fish left";
 			case CATCH_27_FIRST:
 			case CATCH_27_SECOND:
 			case CATCH_27_FINAL:
-				return snapshot.getFish() + " / " + TemporossRoute.FULL_FISH_TARGET + " fish";
+				return snapshot.getTotalFish() + " / " + TemporossRoute.FULL_FISH_TARGET + " fish";
 			case ATTACK_FIRST:
 			case KILL_TEMPOROSS:
+			case MIX_ATTACK_FIRST:
+			case MIX_ATTACK_SECOND:
+			case MIX_KILL_TEMPOROSS:
 				return formatEssence();
 			case LOAD_THREE:
-				return Math.min(3, Math.max(0, TemporossRoute.FULL_FISH_TARGET - snapshot.getFish()))
+				return Math.min(3, Math.max(0, TemporossRoute.FULL_FISH_TARGET - snapshot.getTotalFish()))
 					+ " / 3 loaded";
 			case ATTACK_TO_TEN:
 				return formatEssence() + " -> " + TemporossRoute.ESSENCE_TARGET + "%";
+			case MIX_CATCH_OPENING:
+				return cookingTargetProgress(TemporossRoute.MIX_OPENING_TARGET, "fish");
+			case MIX_COOK_OPENING:
+				return snapshot.getRawFish() + " raw left";
+			case MIX_CATCH_TO_17:
+				return cookingTargetProgress(TemporossRoute.MIX_FIRST_LOAD_TARGET, "fish");
+			case MIX_COOK_TO_17:
+				return preparedProgress(TemporossRoute.MIX_FIRST_LOAD_TARGET);
+			case MIX_LOAD_17:
+				return loadedProgress(TemporossRoute.MIX_FIRST_LOAD_TARGET);
+			case MIX_CATCH_19_FIRST:
+			case MIX_CATCH_19_SECOND:
+				return cookingTargetProgress(TemporossRoute.MIX_STANDARD_LOAD_TARGET, "fish");
+			case MIX_COOK_19_FIRST:
+			case MIX_COOK_19_SECOND:
+				return preparedProgress(TemporossRoute.MIX_STANDARD_LOAD_TARGET);
+			case MIX_LOAD_19_FIRST:
+			case MIX_LOAD_19_SECOND:
+				return loadedProgress(TemporossRoute.MIX_STANDARD_LOAD_TARGET);
+			case MIX_CATCH_FINAL:
+				return Math.min(
+					temporossFinalProgress(snapshot.getCookableFish()),
+					TemporossRoute.MIX_FINAL_LOAD_TARGET) + " / 28 fish";
+			case MIX_COOK_FINAL:
+				return Math.min(
+					temporossFinalProgress(snapshot.getPreparedFish()),
+					TemporossRoute.MIX_FINAL_LOAD_TARGET) + " / 28 cooked";
+			case MIX_LOAD_FINAL:
+				return Math.min(
+					temporossFinalProgress(route.getPreparedLoadedThisStage()),
+					TemporossRoute.MIX_FINAL_LOAD_TARGET) + " / 28 loaded";
 			case COMPLETE:
+			case MIX_COMPLETE:
 				return "Select Leave";
 			default:
 				return "";
 		}
+	}
+
+	String getInstructionText()
+	{
+		int excessFish = route.getExcessFish(snapshot);
+		if (excessFish > 0)
+		{
+			return "Drop " + excessFish + " extra raw fish to keep the cooked load exact.";
+		}
+		return route.getStage().getInstruction();
+	}
+
+	private String cookingTargetProgress(int target, String unit)
+	{
+		return snapshot.getCookableFish() + " / " + target + " " + unit;
+	}
+
+	private String preparedProgress(int target)
+	{
+		return snapshot.getPreparedFish() + " / " + target + " cooked";
+	}
+
+	private String loadedProgress(int target)
+	{
+		return route.getPreparedLoadedThisStage() + " / " + target + " loaded";
+	}
+
+	private int temporossFinalProgress(int currentCycleProgress)
+	{
+		return route.getFinalBatchLoaded() + currentCycleProgress;
 	}
 
 	private String formatEssence()
@@ -396,6 +527,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 		inEncounter = true;
 		defeated = false;
 		resetWorkingSide();
+		route.setMethod(config.method());
 		route.reset();
 		snapshot = buildSnapshot();
 		scanSceneOnce();
@@ -414,15 +546,21 @@ public class TemporossSoloHelperPlugin extends Plugin
 		route.reset();
 		snapshot = new RouteSnapshot(
 			0,
+			0,
+			0,
 			TemporossRoute.FIRST_FISH_TARGET,
 			null,
+			false,
+			false,
 			false,
 			false);
 	}
 
 	private RouteSnapshot buildSnapshot()
 	{
-		int fish = 0;
+		int rawFish = 0;
+		int cookedFish = 0;
+		int crystallisedFish = 0;
 		int freeInventorySlots = TemporossRoute.FIRST_FISH_TARGET;
 		ItemContainer inventory = client.getItemContainer(InventoryID.INV);
 		if (inventory != null)
@@ -433,9 +571,13 @@ public class TemporossSoloHelperPlugin extends Plugin
 				switch (item.getId())
 				{
 					case ItemID.TEMPOROSS_RAW_HARPOONFISH:
+						rawFish += item.getQuantity();
+						break;
 					case ItemID.TEMPOROSS_HARPOONFISH:
+						cookedFish += item.getQuantity();
+						break;
 					case ItemID.TEMPOROSS_CRYSTALLISED_HARPOONFISH:
-						fish += item.getQuantity();
+						crystallisedFish += item.getQuantity();
 						break;
 					default:
 						break;
@@ -444,11 +586,34 @@ public class TemporossSoloHelperPlugin extends Plugin
 		}
 
 		return new RouteSnapshot(
-			fish,
+			rawFish,
+			cookedFish,
+			crystallisedFish,
 			freeInventorySlots,
 			readEssencePercent(),
+			containsNpc(DOUBLE_FISHING_SPOT_IDS),
 			containsNpc(SPIRIT_POOL_IDS),
+			isLoadingFish(),
 			defeated);
+	}
+
+	private boolean isLoadingFish()
+	{
+		if (loadInteractionActive
+			|| (lastLoadActivityTick >= 0
+				&& client.getTickCount() - lastLoadActivityTick <= LOAD_CANDIDATE_MAX_AGE_TICKS))
+		{
+			return true;
+		}
+
+		if (client.getLocalPlayer() == null)
+		{
+			return false;
+		}
+
+		Actor interacting = client.getLocalPlayer().getInteracting();
+		return interacting instanceof NPC
+			&& AMMUNITION_CRATE_IDS.contains(((NPC) interacting).getId());
 	}
 
 	boolean isOnWorkingSide(LocalPoint location)
@@ -477,6 +642,11 @@ public class TemporossSoloHelperPlugin extends Plugin
 				&& AMMUNITION_CRATE_IDS.contains(npc.getId()))
 			{
 				observeWorkingSideCandidate(npc);
+			}
+			if (isLoadStage(route.getStage()) && AMMUNITION_CRATE_IDS.contains(npc.getId()))
+			{
+				lastLoadActivityTick = client.getTickCount();
+				loadInteractionActive = true;
 			}
 		}
 	}
@@ -529,11 +699,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 
 	private static boolean isLoadStage(RouteStage stage)
 	{
-		return stage == RouteStage.LOAD_26
-			|| stage == RouteStage.LOAD_27_FIRST
-			|| stage == RouteStage.LOAD_THREE
-			|| stage == RouteStage.LOAD_REMAINDER
-			|| stage == RouteStage.LOAD_FINAL;
+		return stage.getTarget() == RouteTarget.LOAD;
 	}
 
 	private List<NPC> getTrackedAmmunitionCrates()
@@ -553,6 +719,8 @@ public class TemporossSoloHelperPlugin extends Plugin
 	{
 		workingSide.reset();
 		workingSideCandidateTick = -1;
+		lastLoadActivityTick = -1;
+		loadInteractionActive = false;
 	}
 
 	private Integer readEssencePercent()

@@ -47,7 +47,11 @@ class TemporossSoloPanelOverlay extends OverlayPanel
 			.color(config.highlightColor())
 			.build());
 		panelComponent.getChildren().add(LineComponent.builder()
-			.left("TRIP " + stage.getTrip() + " OF 4")
+			.left(plugin.getMethod().toString())
+			.leftColor(config.priorityColor())
+			.build());
+		panelComponent.getChildren().add(LineComponent.builder()
+			.left("TRIP " + stage.getTrip() + " OF " + plugin.getTripCount())
 			.leftColor(config.highlightColor())
 			.right(config.autoAdvance() ? "AUTO" : "MANUAL")
 			.rightColor(config.autoAdvance() ? new Color(120, 220, 140) : Color.LIGHT_GRAY)
@@ -55,17 +59,17 @@ class TemporossSoloPanelOverlay extends OverlayPanel
 
 		ProgressBarComponent routeProgress = new ProgressBarComponent();
 		routeProgress.setMinimum(0);
-		routeProgress.setMaximum(RouteStage.values().length);
-		routeProgress.setValue(stage.ordinal() + 1);
+		routeProgress.setMaximum(plugin.getStageCount());
+		routeProgress.setValue(plugin.getStageNumber());
 		routeProgress.setLabelDisplayMode(ProgressBarComponent.LabelDisplayMode.TEXT_ONLY);
 		routeProgress.setCenterLabel(
-			"Step " + (stage.ordinal() + 1) + " of " + RouteStage.values().length);
+			"Step " + plugin.getStageNumber() + " of " + plugin.getStageCount());
 		routeProgress.setForegroundColor(config.highlightColor());
 		routeProgress.setBackgroundColor(new Color(55, 55, 55, 210));
 		panelComponent.getChildren().add(routeProgress);
 
 		panelComponent.getChildren().add(LineComponent.builder()
-			.left(stage.getInstruction())
+			.left(plugin.getInstructionText())
 			.leftColor(Color.WHITE)
 			.build());
 		panelComponent.getChildren().add(LineComponent.builder()

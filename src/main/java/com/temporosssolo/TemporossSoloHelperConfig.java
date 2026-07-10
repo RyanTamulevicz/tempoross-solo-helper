@@ -13,6 +13,16 @@ public interface TemporossSoloHelperConfig extends Config
 	String GROUP = "tempoross-solo-helper";
 
 	@ConfigItem(
+		keyName = "method",
+		name = "Method",
+		description = "Selects the solo Tempoross strategy to guide"
+	)
+	default TemporossMethod method()
+	{
+		return TemporossMethod.NO_COOKING_MAX_XP;
+	}
+
+	@ConfigItem(
 		keyName = "showPanel",
 		name = "Show route panel",
 		description = "Shows the current solo route step and progress"
@@ -98,7 +108,7 @@ public interface TemporossSoloHelperConfig extends Config
 	@ConfigItem(
 		keyName = "resetRoute",
 		name = "Reset-route hotkey",
-		description = "Returns the helper to Catch 25 or 26; the panel also has a right-click action"
+		description = "Returns the selected method to its first step; the panel also has a right-click action"
 	)
 	default Keybind resetRoute()
 	{

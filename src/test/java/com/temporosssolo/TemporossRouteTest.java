@@ -10,6 +10,7 @@ public class TemporossRouteTest
 	public void followsCompleteCatch26Route()
 	{
 		TemporossRoute route = new TemporossRoute();
+		assertEquals(TemporossMethod.NO_COOKING_MAX_XP, route.getMethod());
 		assertEquals(RouteStage.CATCH_26, route.getStage());
 
 		updateAndAssert(route, snapshot(26, 100, false, false), RouteStage.LOAD_26);
@@ -76,6 +77,25 @@ public class TemporossRouteTest
 	}
 
 	@Test
+	public void noCookingMethodStillCountsCrystallisedFish()
+	{
+		TemporossRoute route = new TemporossRoute();
+		RouteSnapshot mixedFish = new RouteSnapshot(
+			13,
+			0,
+			13,
+			0,
+			100,
+			false,
+			false,
+			false,
+			false);
+
+		route.update(mixedFish);
+		assertEquals(RouteStage.LOAD_26, route.getStage());
+	}
+
+	@Test
 	public void waitsForThreeFishAndTenPercentBreakpoints()
 	{
 		TemporossRoute route = new TemporossRoute();
@@ -130,7 +150,7 @@ public class TemporossRouteTest
 		route.previous();
 		assertEquals(RouteStage.CATCH_26, route.getStage());
 
-		for (int i = 0; i < RouteStage.values().length + 2; i++)
+		for (int i = 0; i < route.getStageCount() + 2; i++)
 		{
 			route.next();
 		}
@@ -145,15 +165,19 @@ public class TemporossRouteTest
 	{
 		return new RouteSnapshot(
 			fish,
+			0,
+			0,
 			Math.max(0, TemporossRoute.FIRST_FISH_TARGET - fish),
 			essence,
+			false,
 			poolActive,
+			false,
 			defeated);
 	}
 
 	private static RouteSnapshot snapshotWithFreeSlots(int fish, int freeInventorySlots)
 	{
-		return new RouteSnapshot(fish, freeInventorySlots, 100, false, false);
+		return new RouteSnapshot(fish, 0, 0, freeInventorySlots, 100, false, false, false, false);
 	}
 
 	private static void updateAndAssert(

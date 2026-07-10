@@ -47,32 +47,26 @@ class TemporossSoloSceneOverlay extends Overlay
 			return null;
 		}
 
-		switch (plugin.getStage())
+		switch (plugin.getTarget())
 		{
-			case CATCH_26:
-			case CATCH_27_FIRST:
-			case CATCH_27_SECOND:
-			case CATCH_27_FINAL:
+			case NONE:
+				break;
+			case FISH:
 				renderFishingSpot(graphics);
 				break;
-			case LOAD_26:
+			case COOK:
+				renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.COOKING_SHRINE_IDS),
+					"Cook fish", config.highlightColor());
+				break;
+			case LOAD:
 				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.AMMUNITION_CRATE_IDS),
 					"Load fish", config.highlightColor());
 				break;
-			case LOAD_27_FIRST:
-			case LOAD_THREE:
-			case LOAD_REMAINDER:
-			case LOAD_FINAL:
-				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.AMMUNITION_CRATE_IDS),
-					"Load fish", config.highlightColor());
-				break;
-			case ATTACK_FIRST:
-			case ATTACK_TO_TEN:
-			case KILL_TEMPOROSS:
+			case ATTACK:
 				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.SPIRIT_POOL_IDS),
 					"Harpoon Tempoross", config.highlightColor());
 				break;
-			case COMPLETE:
+			case LEAVE:
 				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.VICTORY_NPC_IDS),
 					"Leave", config.highlightColor());
 				break;
