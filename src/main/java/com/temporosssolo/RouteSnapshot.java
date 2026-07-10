@@ -3,23 +3,20 @@ package com.temporosssolo;
 final class RouteSnapshot
 {
 	private final int fish;
-	private final int emptyBuckets;
-	private final int waterBuckets;
+	private final int freeInventorySlots;
 	private final Integer essencePercent;
 	private final boolean spiritPoolActive;
 	private final boolean defeated;
 
 	RouteSnapshot(
 		int fish,
-		int emptyBuckets,
-		int waterBuckets,
+		int freeInventorySlots,
 		Integer essencePercent,
 		boolean spiritPoolActive,
 		boolean defeated)
 	{
 		this.fish = fish;
-		this.emptyBuckets = emptyBuckets;
-		this.waterBuckets = waterBuckets;
+		this.freeInventorySlots = freeInventorySlots;
 		this.essencePercent = essencePercent;
 		this.spiritPoolActive = spiritPoolActive;
 		this.defeated = defeated;
@@ -30,19 +27,9 @@ final class RouteSnapshot
 		return fish;
 	}
 
-	int getEmptyBuckets()
+	int getFishCapacity()
 	{
-		return emptyBuckets;
-	}
-
-	int getWaterBuckets()
-	{
-		return waterBuckets;
-	}
-
-	int getBuckets()
-	{
-		return emptyBuckets + waterBuckets;
+		return fish + freeInventorySlots;
 	}
 
 	Integer getEssencePercent()

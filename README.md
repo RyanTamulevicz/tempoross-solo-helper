@@ -1,35 +1,47 @@
 # Tempoross Solo Helper
 
-A RuneLite Plugin Hub-style helper for the no-cook solo Tempoross catch-26 route. It presents one current action, highlights the relevant in-game target, and advances from observed inventory, HUD, NPC, and object state.
+A RuneLite Plugin Hub-style helper for the no-cook solo Tempoross route. It presents one current action, highlights the relevant in-game target, and advances from observed inventory, HUD, NPC, and object state.
 
 The plugin is guidance-only. It does not click, inject input, change menu entries, predict future hazards, or send actions to the game.
 
 ## Route
 
-1. Catch 26 harpoonfish.
-2. Load all 26; tether during the wave and douse the ship fire with the starting bucket.
-3. Take five more buckets, leaving six total.
-4. Cast Humidify (or use the water pump), then douse fires.
-5. Drop every bucket and catch 27 fish.
-6. Load all 27 and harpoon the spirit pool until it closes.
-7. Catch 27, load exactly five, and harpoon Tempoross to 12% essence.
-8. Load the remaining 22.
-9. Catch 27, load all, and finish Tempoross.
-10. Take one bucket before leaving so the next run starts with 26 fish slots.
+### Trip 1
+
+1. Run to the island and catch 25 or 26 harpoonfish, selected automatically from available inventory space. Double-fish spots take priority.
+2. Load the full batch into the highlighted hopper and tether if needed.
+
+### Trip 2
+
+1. Return to the island and catch 27 fish.
+2. Load all 27, then fish from the spirit pool until it closes.
+
+### Trip 3
+
+1. Catch 27 fish.
+2. Load exactly three, leaving 24, then click off and return to the spirit pool.
+3. Fish from the pool to about 10% essence.
+4. Load the remaining fish. Loading one extra by mistake will not strand the route.
+
+### Trip 4
+
+1. Catch and load the final 27 fish, then finish Tempoross at the spirit pool.
+2. Select **Leave** on a Spirit Angler NPC.
 
 ## Recommended setup
 
 - Crystal harpoon for the XP-focused route
-- Full spirit angler outfit so no rope occupies an inventory slot
-- Rune pouch with the runes for Humidify
-- One starting bucket of water
-- 27 free inventory slots after the rune pouch; the starting bucket reduces the first catch to 26
+- Enough open inventory space for the 25/26-fish opening trip and each 27-fish trip
 
 ## Controls and recovery
 
-At the Tempoross lobby, right-click the route panel and choose **Start route**. This explicit activation keeps the encounter guidance manually triggered. The helper remains armed and resets automatically for each game until **Stop route** is selected.
+The helper starts and resets automatically when the Tempoross encounter HUD appears after zoning into a game. No panel interaction is required. Right-click the route panel for **Previous step**, **Next step**, or **Reset route** if recovery is needed. Optional hotkeys for those navigation actions are available in the plugin configuration.
 
-Right-click the route panel for **Previous step**, **Next step**, or **Reset route**. Optional hotkeys for those navigation actions are available in the plugin configuration.
+The helper learns the working island shore from the exact ammunition hopper that successfully loads fish. It keeps that shore locked for passive fire guidance, while the route itself proceeds independently of every fire.
+
+During fishing steps, a spawned double-fish spot is always highlighted ahead of nearer normal spots.
+
+The panel groups the fishing, loading, pool, and departure actions into four trips, shows overall route progress, and reports AUTO or MANUAL tracking state. Double-fish spots use a separate configurable priority color.
 
 Automatic progression intentionally waits at timing-sensitive steps. If an unusual sequence or missed interaction leaves the helper on the wrong step, use the panel controls instead of restarting the game.
 

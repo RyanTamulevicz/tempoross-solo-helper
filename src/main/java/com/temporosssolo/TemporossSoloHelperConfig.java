@@ -15,7 +15,7 @@ public interface TemporossSoloHelperConfig extends Config
 	@ConfigItem(
 		keyName = "showPanel",
 		name = "Show route panel",
-		description = "Shows the current catch-26 route step and progress"
+		description = "Shows the current solo route step and progress"
 	)
 	default boolean showPanel()
 	{
@@ -25,7 +25,7 @@ public interface TemporossSoloHelperConfig extends Config
 	@ConfigItem(
 		keyName = "highlightTargets",
 		name = "Highlight current target",
-		description = "Highlights the object, NPC, spell, or inventory item for the current step"
+		description = "Highlights the current route target and active fires on the working shore"
 	)
 	default boolean highlightTargets()
 	{
@@ -55,9 +55,20 @@ public interface TemporossSoloHelperConfig extends Config
 
 	@Alpha
 	@ConfigItem(
+		keyName = "priorityColor",
+		name = "Double-spot color",
+		description = "Color used for priority double-fish spots"
+	)
+	default Color priorityColor()
+	{
+		return new Color(255, 215, 0, 230);
+	}
+
+	@Alpha
+	@ConfigItem(
 		keyName = "urgentColor",
-		name = "Tether color",
-		description = "Color used for an active wave tether reminder"
+		name = "Fire color",
+		description = "Color used to highlight active fires"
 	)
 	default Color urgentColor()
 	{
@@ -87,7 +98,7 @@ public interface TemporossSoloHelperConfig extends Config
 	@ConfigItem(
 		keyName = "resetRoute",
 		name = "Reset-route hotkey",
-		description = "Returns the helper to Catch 26; the panel also has a right-click action"
+		description = "Returns the helper to Catch 25 or 26; the panel also has a right-click action"
 	)
 	default Keybind resetRoute()
 	{

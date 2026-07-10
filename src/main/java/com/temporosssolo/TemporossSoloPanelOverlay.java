@@ -8,6 +8,7 @@ import net.runelite.api.MenuAction;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
+import net.runelite.client.ui.overlay.components.ProgressBarComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 
 class TemporossSoloPanelOverlay extends OverlayPanel
@@ -27,49 +28,17 @@ class TemporossSoloPanelOverlay extends OverlayPanel
 		this.config = config;
 		setPosition(OverlayPosition.BOTTOM_LEFT);
 		panelComponent.setPreferredSize(new Dimension(PANEL_WIDTH, 0));
-		addMenuEntry(MenuAction.RUNELITE_OVERLAY, "Start route", "Catch-26 route", entry -> plugin.startRoute());
-		addMenuEntry(MenuAction.RUNELITE_OVERLAY, "Stop route", "Catch-26 route", entry -> plugin.stopRoute());
-		addMenuEntry(MenuAction.RUNELITE_OVERLAY, "Next step", "Catch-26 route", entry -> plugin.nextStep());
-		addMenuEntry(MenuAction.RUNELITE_OVERLAY, "Previous step", "Catch-26 route", entry -> plugin.previousStep());
-		addMenuEntry(MenuAction.RUNELITE_OVERLAY, "Reset route", "Catch-26 route", entry -> plugin.resetRoute());
+		addMenuEntry(MenuAction.RUNELITE_OVERLAY, "Next step", "Tempoross route", entry -> plugin.nextStep());
+		addMenuEntry(MenuAction.RUNELITE_OVERLAY, "Previous step", "Tempoross route", entry -> plugin.previousStep());
+		addMenuEntry(MenuAction.RUNELITE_OVERLAY, "Reset route", "Tempoross route", entry -> plugin.resetRoute());
 	}
 
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (!config.showPanel() || !plugin.isTemporossContextVisible())
+		if (!config.showPanel() || !plugin.isInEncounter())
 		{
 			return null;
-		}
-
-		if (!plugin.isRouteActive())
-		{
-			panelComponent.getChildren().add(TitleComponent.builder()
-				.text("Catch-26 helper inactive")
-				.color(Color.ORANGE)
-				.build());
-			panelComponent.getChildren().add(LineComponent.builder()
-				.left("Right-click this panel.")
-				.leftColor(Color.WHITE)
-				.build());
-			panelComponent.getChildren().add(LineComponent.builder()
-				.left("Choose Start route to arm the helper.")
-				.leftColor(Color.WHITE)
-				.build());
-			return super.render(graphics);
-		}
-
-		if (!plugin.isInEncounter())
-		{
-			panelComponent.getChildren().add(TitleComponent.builder()
-				.text("Catch-26 helper armed")
-				.color(config.highlightColor())
-				.build());
-			panelComponent.getChildren().add(LineComponent.builder()
-				.left("Waiting for the next Tempoross encounter.")
-				.leftColor(Color.WHITE)
-				.build());
-			return super.render(graphics);
 		}
 
 		RouteStage stage = plugin.getStage();
@@ -78,9 +47,23 @@ class TemporossSoloPanelOverlay extends OverlayPanel
 			.color(config.highlightColor())
 			.build());
 		panelComponent.getChildren().add(LineComponent.builder()
-			.left("Step")
-			.right((stage.ordinal() + 1) + " / " + RouteStage.values().length)
+			.left("TRIP " + stage.getTrip() + " OF 4")
+			.leftColor(config.highlightColor())
+			.right(config.autoAdvance() ? "AUTO" : "MANUAL")
+			.rightColor(config.autoAdvance() ? new Color(120, 220, 140) : Color.LIGHT_GRAY)
 			.build());
+
+		ProgressBarComponent routeProgress = new ProgressBarComponent();
+		routeProgress.setMinimum(0);
+		routeProgress.setMaximum(RouteStage.values().length);
+		routeProgress.setValue(stage.ordinal() + 1);
+		routeProgress.setLabelDisplayMode(ProgressBarComponent.LabelDisplayMode.TEXT_ONLY);
+		routeProgress.setCenterLabel(
+			"Step " + (stage.ordinal() + 1) + " of " + RouteStage.values().length);
+		routeProgress.setForegroundColor(config.highlightColor());
+		routeProgress.setBackgroundColor(new Color(55, 55, 55, 210));
+		panelComponent.getChildren().add(routeProgress);
+
 		panelComponent.getChildren().add(LineComponent.builder()
 			.left(stage.getInstruction())
 			.leftColor(Color.WHITE)
@@ -91,7 +74,7 @@ class TemporossSoloPanelOverlay extends OverlayPanel
 			.rightColor(config.highlightColor())
 			.build());
 		panelComponent.getChildren().add(LineComponent.builder()
-			.left("Right-click panel: Previous / Next / Reset / Stop")
+			.left("Right-click for Previous / Next / Reset")
 			.leftColor(Color.LIGHT_GRAY)
 			.build());
 		return super.render(graphics);

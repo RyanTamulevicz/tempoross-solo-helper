@@ -12,87 +12,104 @@ public class TemporossRouteTest
 		TemporossRoute route = new TemporossRoute();
 		assertEquals(RouteStage.CATCH_26, route.getStage());
 
-		updateAndAssert(route, snapshot(26, 0, 1, 100, false, false), RouteStage.LOAD_26);
-		updateAndAssert(route, snapshot(0, 1, 0, 100, false, false), RouteStage.TAKE_FIVE_BUCKETS);
-		updateAndAssert(route, snapshot(0, 6, 0, 100, false, false), RouteStage.HUMIDIFY_BUCKETS);
-		updateAndAssert(route, snapshot(0, 0, 6, 100, false, false), RouteStage.DOUSE_FIRES);
-		updateAndAssert(route, snapshot(0, 6, 0, 100, false, false), RouteStage.DROP_BUCKETS);
-		updateAndAssert(route, snapshot(0, 0, 0, 100, false, false), RouteStage.CATCH_27_FIRST);
-		updateAndAssert(route, snapshot(27, 0, 0, 100, false, false), RouteStage.LOAD_27_FIRST);
-		updateAndAssert(route, snapshot(0, 0, 0, 100, false, false), RouteStage.ATTACK_FIRST);
-		updateAndAssert(route, snapshot(0, 0, 0, 75, true, false), RouteStage.ATTACK_FIRST);
-		updateAndAssert(route, snapshot(0, 0, 0, 70, false, false), RouteStage.CATCH_27_SECOND);
-		updateAndAssert(route, snapshot(27, 0, 0, 70, false, false), RouteStage.LOAD_FIVE);
-		updateAndAssert(route, snapshot(22, 0, 0, 70, true, false), RouteStage.ATTACK_TO_TWELVE);
-		updateAndAssert(route, snapshot(22, 0, 0, 12, true, false), RouteStage.LOAD_REMAINDER);
-		updateAndAssert(route, snapshot(0, 0, 0, 12, false, false), RouteStage.CATCH_27_FINAL);
-		updateAndAssert(route, snapshot(27, 0, 0, 12, false, false), RouteStage.LOAD_FINAL);
-		updateAndAssert(route, snapshot(0, 0, 0, 12, true, false), RouteStage.KILL_TEMPOROSS);
-		updateAndAssert(route, snapshot(0, 0, 0, 0, false, true), RouteStage.TAKE_ONE_BUCKET);
-		updateAndAssert(route, snapshot(0, 1, 0, 0, false, true), RouteStage.COMPLETE);
+		updateAndAssert(route, snapshot(26, 100, false, false), RouteStage.LOAD_26);
+		updateAndAssert(route, snapshot(0, 100, false, false), RouteStage.CATCH_27_FIRST);
+		updateAndAssert(route, snapshot(27, 100, false, false), RouteStage.LOAD_27_FIRST);
+		updateAndAssert(route, snapshot(0, 100, false, false), RouteStage.ATTACK_FIRST);
+		updateAndAssert(route, snapshot(0, 75, true, false), RouteStage.ATTACK_FIRST);
+		updateAndAssert(route, snapshot(0, 70, false, false), RouteStage.CATCH_27_SECOND);
+		updateAndAssert(route, snapshot(27, 70, false, false), RouteStage.LOAD_THREE);
+		updateAndAssert(route, snapshot(24, 70, true, false), RouteStage.ATTACK_TO_TEN);
+		updateAndAssert(route, snapshot(24, 10, true, false), RouteStage.LOAD_REMAINDER);
+		updateAndAssert(route, snapshot(0, 10, false, false), RouteStage.CATCH_27_FINAL);
+		updateAndAssert(route, snapshot(27, 10, false, false), RouteStage.LOAD_FINAL);
+		updateAndAssert(route, snapshot(0, 10, true, false), RouteStage.KILL_TEMPOROSS);
+		updateAndAssert(route, snapshot(0, 0, false, true), RouteStage.COMPLETE);
 	}
 
 	@Test
-	public void progressesThroughFishingBucketsAndFirstAttack()
+	public void progressesThroughFishingAndFirstAttack()
 	{
 		TemporossRoute route = new TemporossRoute();
 		assertEquals(RouteStage.CATCH_26, route.getStage());
 
-		route.update(snapshot(26, 0, 1, 100, false, false));
+		route.update(snapshot(26, 100, false, false));
 		assertEquals(RouteStage.LOAD_26, route.getStage());
 
-		route.update(snapshot(0, 1, 0, 100, false, false));
-		assertEquals(RouteStage.TAKE_FIVE_BUCKETS, route.getStage());
-
-		route.update(snapshot(0, 6, 0, 100, false, false));
-		assertEquals(RouteStage.HUMIDIFY_BUCKETS, route.getStage());
-
-		route.update(snapshot(0, 0, 6, 100, false, false));
-		assertEquals(RouteStage.DOUSE_FIRES, route.getStage());
-
-		route.update(snapshot(0, 6, 0, 100, false, false));
-		assertEquals(RouteStage.DROP_BUCKETS, route.getStage());
-
-		route.update(snapshot(0, 0, 0, 100, false, false));
+		route.update(snapshot(0, 100, false, false));
 		assertEquals(RouteStage.CATCH_27_FIRST, route.getStage());
 
-		route.update(snapshot(27, 0, 0, 100, false, false));
+		route.update(snapshot(27, 100, false, false));
 		assertEquals(RouteStage.LOAD_27_FIRST, route.getStage());
 
-		route.update(snapshot(0, 0, 0, 100, false, false));
+		route.update(snapshot(0, 100, false, false));
 		assertEquals(RouteStage.ATTACK_FIRST, route.getStage());
 
-		route.update(snapshot(0, 0, 0, 80, true, false));
+		route.update(snapshot(0, 80, true, false));
 		assertEquals(RouteStage.ATTACK_FIRST, route.getStage());
 
-		route.update(snapshot(0, 0, 0, 70, false, false));
+		route.update(snapshot(0, 70, false, false));
 		assertEquals(RouteStage.CATCH_27_SECOND, route.getStage());
 	}
 
 	@Test
-	public void waitsForFiveFishAndTwelvePercentBreakpoints()
+	public void firstCatchUsesAvailableInventoryCapacity()
+	{
+		assertEquals(25, TemporossRoute.getFirstFishTarget(snapshotWithFreeSlots(0, 25)));
+		assertEquals(26, TemporossRoute.getFirstFishTarget(snapshotWithFreeSlots(0, 26)));
+
+		TemporossRoute twentySixRoute = new TemporossRoute();
+		twentySixRoute.update(snapshotWithFreeSlots(25, 1));
+		assertEquals(RouteStage.CATCH_26, twentySixRoute.getStage());
+		twentySixRoute.update(snapshotWithFreeSlots(26, 0));
+		assertEquals(RouteStage.LOAD_26, twentySixRoute.getStage());
+
+		TemporossRoute twentyFiveRoute = new TemporossRoute();
+		twentyFiveRoute.update(snapshotWithFreeSlots(24, 1));
+		assertEquals(RouteStage.CATCH_26, twentyFiveRoute.getStage());
+		twentyFiveRoute.update(snapshotWithFreeSlots(25, 0));
+		assertEquals(RouteStage.LOAD_26, twentyFiveRoute.getStage());
+
+		TemporossRoute fullAtTwentyFour = new TemporossRoute();
+		fullAtTwentyFour.update(snapshotWithFreeSlots(24, 0));
+		assertEquals(RouteStage.CATCH_26, fullAtTwentyFour.getStage());
+	}
+
+	@Test
+	public void waitsForThreeFishAndTenPercentBreakpoints()
 	{
 		TemporossRoute route = new TemporossRoute();
-		while (route.getStage() != RouteStage.LOAD_FIVE)
+		while (route.getStage() != RouteStage.LOAD_THREE)
 		{
 			route.next();
 		}
 
-		route.update(snapshot(23, 0, 0, 50, true, false));
-		assertEquals(RouteStage.LOAD_FIVE, route.getStage());
-		route.update(snapshot(21, 0, 0, 50, true, false));
-		assertEquals(RouteStage.LOAD_FIVE, route.getStage());
-		route.update(snapshot(22, 0, 0, 50, true, false));
-		assertEquals(RouteStage.ATTACK_TO_TWELVE, route.getStage());
+		route.update(snapshot(25, 50, true, false));
+		assertEquals(RouteStage.LOAD_THREE, route.getStage());
+		route.update(snapshot(24, 50, true, false));
+		assertEquals(RouteStage.ATTACK_TO_TEN, route.getStage());
 
-		route.update(snapshot(22, 0, 0, 13, true, false));
-		assertEquals(RouteStage.ATTACK_TO_TWELVE, route.getStage());
-		route.update(snapshot(22, 0, 0, 12, true, false));
+		route.update(snapshot(24, 11, true, false));
+		assertEquals(RouteStage.ATTACK_TO_TEN, route.getStage());
+		route.update(snapshot(24, 10, true, false));
 		assertEquals(RouteStage.LOAD_REMAINDER, route.getStage());
 	}
 
 	@Test
-	public void finishesAfterVictoryAndOneBucket()
+	public void recoversWhenMoreThanThreeFishAreLoaded()
+	{
+		TemporossRoute route = new TemporossRoute();
+		while (route.getStage() != RouteStage.LOAD_THREE)
+		{
+			route.next();
+		}
+
+		route.update(snapshot(23, 50, true, false));
+		assertEquals(RouteStage.ATTACK_TO_TEN, route.getStage());
+	}
+
+	@Test
+	public void finishesAfterVictory()
 	{
 		TemporossRoute route = new TemporossRoute();
 		while (route.getStage() != RouteStage.KILL_TEMPOROSS)
@@ -100,11 +117,9 @@ public class TemporossRouteTest
 			route.next();
 		}
 
-		route.update(snapshot(0, 0, 0, 0, false, false));
+		route.update(snapshot(0, 0, false, false));
 		assertEquals(RouteStage.KILL_TEMPOROSS, route.getStage());
-		route.update(snapshot(0, 0, 0, 0, false, true));
-		assertEquals(RouteStage.TAKE_ONE_BUCKET, route.getStage());
-		route.update(snapshot(0, 1, 0, 0, false, true));
+		route.update(snapshot(0, 0, false, true));
 		assertEquals(RouteStage.COMPLETE, route.getStage());
 	}
 
@@ -124,13 +139,21 @@ public class TemporossRouteTest
 
 	private static RouteSnapshot snapshot(
 		int fish,
-		int emptyBuckets,
-		int waterBuckets,
 		Integer essence,
 		boolean poolActive,
 		boolean defeated)
 	{
-		return new RouteSnapshot(fish, emptyBuckets, waterBuckets, essence, poolActive, defeated);
+		return new RouteSnapshot(
+			fish,
+			Math.max(0, TemporossRoute.FIRST_FISH_TARGET - fish),
+			essence,
+			poolActive,
+			defeated);
+	}
+
+	private static RouteSnapshot snapshotWithFreeSlots(int fish, int freeInventorySlots)
+	{
+		return new RouteSnapshot(fish, freeInventorySlots, 100, false, false);
 	}
 
 	private static void updateAndAssert(

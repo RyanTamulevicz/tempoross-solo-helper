@@ -3,9 +3,7 @@ package com.temporosssolo;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FontMetrics;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.Shape;
 import java.util.Set;
 import javax.inject.Inject;
@@ -14,9 +12,6 @@ import net.runelite.api.GameObject;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
-import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -47,15 +42,9 @@ class TemporossSoloSceneOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (!config.highlightTargets() || !plugin.isInEncounter() || !plugin.isRouteActive())
+		if (!config.highlightTargets() || !plugin.isInEncounter())
 		{
 			return null;
-		}
-
-		if (plugin.isWaveIncoming() && !plugin.isTethered())
-		{
-			renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.TETHER_IDS),
-				"Tether", config.urgentColor());
 		}
 
 		switch (plugin.getStage())
@@ -64,65 +53,65 @@ class TemporossSoloSceneOverlay extends Overlay
 			case CATCH_27_FIRST:
 			case CATCH_27_SECOND:
 			case CATCH_27_FINAL:
-				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.FISHING_SPOT_IDS),
-					"Fish", config.highlightColor());
+				renderFishingSpot(graphics);
 				break;
 			case LOAD_26:
-				renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.CANNON_IDS),
-					"Load", config.highlightColor());
-				if (plugin.getSnapshot().getWaterBuckets() > 0)
-				{
-					renderFire(graphics, "Douse ship fire", config.urgentColor());
-				}
+				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.AMMUNITION_CRATE_IDS),
+					"Load fish", config.highlightColor());
 				break;
 			case LOAD_27_FIRST:
-			case LOAD_FIVE:
+			case LOAD_THREE:
 			case LOAD_REMAINDER:
 			case LOAD_FINAL:
-				renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.CANNON_IDS),
-					"Load", config.highlightColor());
-				break;
-			case TAKE_FIVE_BUCKETS:
-			case TAKE_ONE_BUCKET:
-				renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.BUCKET_CRATE_IDS),
-					"Take bucket", config.highlightColor());
-				break;
-			case HUMIDIFY_BUCKETS:
-				renderWidget(graphics, client.getWidget(InterfaceID.MagicSpellbook.HUMIDIFY),
-					"Humidify", config.highlightColor());
-				renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.WATER_PUMP_IDS),
-					"Pump fallback", config.highlightColor());
-				break;
-			case DOUSE_FIRES:
-				renderFire(graphics, "Douse", config.highlightColor());
-				break;
-			case DROP_BUCKETS:
-				renderBucketItems(graphics);
+				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.AMMUNITION_CRATE_IDS),
+					"Load fish", config.highlightColor());
 				break;
 			case ATTACK_FIRST:
-			case ATTACK_TO_TWELVE:
+			case ATTACK_TO_TEN:
 			case KILL_TEMPOROSS:
 				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.SPIRIT_POOL_IDS),
 					"Harpoon Tempoross", config.highlightColor());
 				break;
 			case COMPLETE:
+				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.VICTORY_NPC_IDS),
+					"Leave", config.highlightColor());
 				break;
 		}
+
+		renderFire(graphics, "Douse", config.urgentColor());
 		return null;
+	}
+
+	private void renderFishingSpot(Graphics2D graphics)
+	{
+		NPC doubleSpot = nearestNpc(TemporossSoloHelperPlugin.DOUBLE_FISHING_SPOT_IDS);
+		if (doubleSpot != null)
+		{
+			renderNpc(graphics, doubleSpot, "Double fish", config.priorityColor());
+			return;
+		}
+
+		renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.FISHING_SPOT_IDS),
+			"Fish", config.highlightColor());
 	}
 
 	private void renderFire(Graphics2D graphics, String label, Color color)
 	{
-		NPC fireNpc = nearestNpc(TemporossSoloHelperPlugin.FIRE_NPC_IDS);
+		NPC fireNpc = nearestNpc(TemporossSoloHelperPlugin.FIRE_NPC_IDS, true);
 		if (fireNpc != null)
 		{
 			renderNpc(graphics, fireNpc, label, color);
 			return;
 		}
-		renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.FIRE_OBJECT_IDS), label, color);
+		renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.FIRE_OBJECT_IDS, true), label, color);
 	}
 
 	private GameObject nearestObject(Set<Integer> ids)
+	{
+		return nearestObject(ids, false);
+	}
+
+	private GameObject nearestObject(Set<Integer> ids, boolean workingSideOnly)
 	{
 		Player player = client.getLocalPlayer();
 		if (player == null)
@@ -134,7 +123,9 @@ class TemporossSoloSceneOverlay extends Overlay
 		int nearestDistance = Integer.MAX_VALUE;
 		for (GameObject object : plugin.getTrackedObjects())
 		{
-			if (!ids.contains(object.getId()) || object.getPlane() != player.getWorldLocation().getPlane())
+			if (!ids.contains(object.getId())
+				|| object.getPlane() != player.getWorldLocation().getPlane()
+				|| (workingSideOnly && !plugin.isOnWorkingSide(object.getLocalLocation())))
 			{
 				continue;
 			}
@@ -150,6 +141,11 @@ class TemporossSoloSceneOverlay extends Overlay
 
 	private NPC nearestNpc(Set<Integer> ids)
 	{
+		return nearestNpc(ids, false);
+	}
+
+	private NPC nearestNpc(Set<Integer> ids, boolean workingSideOnly)
+	{
 		Player player = client.getLocalPlayer();
 		if (player == null)
 		{
@@ -160,7 +156,8 @@ class TemporossSoloSceneOverlay extends Overlay
 		int nearestDistance = Integer.MAX_VALUE;
 		for (NPC npc : plugin.getTrackedNpcs())
 		{
-			if (!ids.contains(npc.getId()))
+			if (!ids.contains(npc.getId())
+				|| (workingSideOnly && !plugin.isOnWorkingSide(npc.getLocalLocation())))
 			{
 				continue;
 			}
@@ -222,44 +219,6 @@ class TemporossSoloSceneOverlay extends Overlay
 		{
 			OverlayUtil.renderTextLocation(graphics, textLocation, label, color);
 		}
-	}
-
-	private void renderBucketItems(Graphics2D graphics)
-	{
-		Widget inventory = client.getWidget(InterfaceID.Inventory.ITEMS);
-		if (inventory == null || inventory.isHidden())
-		{
-			return;
-		}
-
-		Widget[] items = inventory.getDynamicChildren();
-		for (Widget item : items)
-		{
-			if (item.getItemId() == ItemID.BUCKET_EMPTY || item.getItemId() == ItemID.BUCKET_WATER)
-			{
-				renderWidget(graphics, item, "Drop", config.highlightColor());
-			}
-		}
-	}
-
-	private static void renderWidget(Graphics2D graphics, Widget widget, String label, Color color)
-	{
-		if (widget == null || widget.isHidden())
-		{
-			return;
-		}
-
-		Rectangle bounds = widget.getBounds();
-		graphics.setColor(fill(color));
-		graphics.fill(bounds);
-		graphics.setColor(color);
-		graphics.setStroke(TARGET_STROKE);
-		graphics.draw(bounds);
-
-		FontMetrics metrics = graphics.getFontMetrics();
-		int x = bounds.x + (bounds.width - metrics.stringWidth(label)) / 2;
-		int y = bounds.y + Math.max(metrics.getAscent(), (bounds.height + metrics.getAscent()) / 2);
-		graphics.drawString(label, x, y);
 	}
 
 	private static Color fill(Color color)
