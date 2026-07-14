@@ -16,7 +16,7 @@ enum RouteStage
 	KILL_TEMPOROSS(4, "Finish Tempoross", "Fish from the spirit pool for the kill.", RouteTarget.ATTACK),
 	COMPLETE(4, "Leave", "Select Leave on a Spirit Angler NPC.", RouteTarget.LEAVE),
 
-	MIX_FISH_17(1, "Fish 17 harpoonfish", "Setup: 5 buckets of water. Cook when you've caught the first 8 or so, until a double fish spot comes up.", RouteTarget.FISH),
+	MIX_FISH_17(1, "Fish 17 harpoonfish", "Cook when you've caught the first 8 or so, until a double fish spot comes up.", RouteTarget.FISH),
 	MIX_COOK_17(1, "Cook all the fish", "Cook all the fish.", RouteTarget.COOK),
 	MIX_LOAD_17(1, "Load all 17 fish", "Load all 17 fish.", RouteTarget.LOAD),
 	MIX_FIRES_FIRST(1, "Fires should come up now", "Usually 4 fires appear, but sometimes 1 spreads. Drop buckets after this.", RouteTarget.FISH),
@@ -28,11 +28,11 @@ enum RouteStage
 	MIX_COOK_19_SECOND(3, "Cook all", "Cook all the fish.", RouteTarget.COOK),
 	MIX_LOAD_19_SECOND(3, "Load all 19 fish", "Tempoross will go down, but just keep loading it all.", RouteTarget.LOAD),
 	MIX_ATTACK_SECOND(3, "Attack Tempoross", "Attack Tempoross.", RouteTarget.ATTACK),
-	MIX_FISH_FINAL_28(4, "Fish 28 harpoonfish", "Same thing as before: do a few, then cook until a double fish spot comes up.", RouteTarget.FISH),
+	MIX_FISH_FINAL_28(4, "Fish 28 harpoonfish", "Fish until a double fish spot comes up, cook after it expires, and fish the double spot again when it spawns.", RouteTarget.FISH),
 	MIX_COOK_FINAL_28(4, "Cook all", "Cook all the fish.", RouteTarget.COOK),
-	MIX_LOAD_FINAL_28(4, "Load 14 in EACH cannon", "Tempoross will go down, but just keep loading it all.", RouteTarget.LOAD),
+	MIX_LOAD_FINAL_28(4, "Load 14 in EACH cannon", "Load 14 fish into first cannon.", RouteTarget.LOAD),
 	MIX_ATTACK_FINAL(4, "Attack Tempoross", "If bad RNG prevents the kill, the two cannons will redown him. Wait, then finish him off.", RouteTarget.ATTACK),
-	MIX_POST_KILL_BUCKETS(4, "Collect & fill 5 buckets", "Once he dies, collect 5 more buckets and fill them before getting teleported out.", RouteTarget.NONE);
+	MIX_POST_KILL_BUCKETS(4, "Take & fill 5 buckets", "Take 5 buckets and fill them with water before getting kicked out.", RouteTarget.NONE);
 
 	private final int trip;
 	private final String title;

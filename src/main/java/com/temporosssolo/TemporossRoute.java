@@ -56,6 +56,8 @@ final class TemporossRoute
 	private boolean spiritPoolSeen;
 	private boolean earlyCookActive;
 	private boolean earlyCookFinished;
+	private boolean finalDoubleSpotSeen;
+	private boolean finalDoubleCookFinished;
 	private int preparedLoadTarget;
 	private int preparedLoadedThisStage;
 	private int lastPreparedFish;
@@ -100,7 +102,15 @@ final class TemporossRoute
 		{
 			return RouteTarget.NONE;
 		}
-		if (isMixedFishingStage(stage) && earlyCookActive && !earlyCookFinished)
+		if (isEarlyCookFishingStage(stage) && earlyCookActive && !earlyCookFinished)
+		{
+			return RouteTarget.COOK;
+		}
+		if (stage == RouteStage.MIX_FISH_FINAL_28
+			&& finalDoubleSpotSeen
+			&& !finalDoubleCookFinished
+			&& !snapshot.isDoubleSpotActive()
+			&& snapshot.getRawFish() > 0)
 		{
 			return RouteTarget.COOK;
 		}
@@ -176,6 +186,7 @@ final class TemporossRoute
 		stage = stages()[0];
 		spiritPoolSeen = false;
 		resetEarlyCookTracking();
+		resetFinalDoubleTracking();
 		resetFinalHopperTracking();
 		resetPreparedLoadTracking();
 	}
@@ -357,7 +368,7 @@ final class TemporossRoute
 				}
 				break;
 			case MIX_FISH_FINAL_28:
-				updateMixedFishing(snapshot, MIX_FINAL_LOAD_TARGET, RouteStage.MIX_COOK_FINAL_28);
+				updateFinalFishing(snapshot);
 				break;
 			case MIX_COOK_FINAL_28:
 				if (allFishPrepared(snapshot, MIX_FINAL_LOAD_TARGET))
@@ -406,6 +417,27 @@ final class TemporossRoute
 		{
 			earlyCookActive = false;
 			earlyCookFinished = true;
+		}
+	}
+
+	private void updateFinalFishing(RouteSnapshot snapshot)
+	{
+		if (snapshot.getCookableFish() == MIX_FINAL_LOAD_TARGET)
+		{
+			setStage(RouteStage.MIX_COOK_FINAL_28);
+			return;
+		}
+
+		if (snapshot.isDoubleSpotActive())
+		{
+			finalDoubleSpotSeen = true;
+			finalDoubleCookFinished = false;
+		}
+		else if (finalDoubleSpotSeen
+			&& !finalDoubleCookFinished
+			&& snapshot.getRawFish() == 0)
+		{
+			finalDoubleCookFinished = true;
 		}
 	}
 
@@ -489,6 +521,12 @@ final class TemporossRoute
 		earlyCookFinished = false;
 	}
 
+	private void resetFinalDoubleTracking()
+	{
+		finalDoubleSpotSeen = false;
+		finalDoubleCookFinished = false;
+	}
+
 	private void resetFinalHopperTracking()
 	{
 		firstFinalHopperKey = -1;
@@ -534,6 +572,10 @@ final class TemporossRoute
 		{
 			resetEarlyCookTracking();
 		}
+		if (stage == RouteStage.MIX_FISH_FINAL_28)
+		{
+			resetFinalDoubleTracking();
+		}
 		if (stage.getTarget() != RouteTarget.LOAD)
 		{
 			resetPreparedLoadTracking();
@@ -546,5 +588,12 @@ final class TemporossRoute
 			|| candidate == RouteStage.MIX_FISH_19_FIRST
 			|| candidate == RouteStage.MIX_FISH_19_SECOND
 			|| candidate == RouteStage.MIX_FISH_FINAL_28;
+	}
+
+	private static boolean isEarlyCookFishingStage(RouteStage candidate)
+	{
+		return candidate == RouteStage.MIX_FISH_17
+			|| candidate == RouteStage.MIX_FISH_19_FIRST
+			|| candidate == RouteStage.MIX_FISH_19_SECOND;
 	}
 }

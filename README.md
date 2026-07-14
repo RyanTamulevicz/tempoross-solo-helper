@@ -39,7 +39,7 @@ Changing the method resets the current route. The selected method starts automat
 
 ## Cooking Mix of XP and permits
 
-Setup: **5 buckets of water**.
+Setup before entering: have **5 buckets of water in your inventory**.
 
 1. Fish 17 harpoonfish. Cook when you've caught the first 8 or so, and cook until a double fish spot comes up.
 2. Cook all the fish.
@@ -53,13 +53,13 @@ Setup: **5 buckets of water**.
 10. Cook all.
 11. Load all 19 fish. Tempoross will go down, but just keep loading it all.
 12. Attack Tempoross.
-13. Fish 28 harpoonfish. Do a few, then cook until a double fish spot comes up.
+13. Fish until a double fish spot comes up, cook after the spot expires, and fish the double spot again when it spawns.
 14. Cook all.
-15. Load 14 fish in **each** cannon. Tempoross will go down, but just keep loading it all.
+15. Load 14 fish into the first cannon, then load 14 into the second cannon.
 16. Attack Tempoross. If bad RNG prevents the kill, wait for the two cannons to redown him and finish him off.
-17. Once he dies, collect 5 more buckets and fill them before getting teleported out.
+17. Once he dies, take 5 buckets and fill them with water before getting kicked out.
 
-The fishing steps temporarily switch the primary highlight to the cooking shrine after the first 8 fish. A spawned double-fish spot immediately ends that early cooking break and restores fishing priority. If no double spot appears, the helper resumes fishing when the current raw fish are cooked.
+The 17/19/19 fishing steps temporarily switch the primary highlight to the cooking shrine after the first 8 fish. A spawned double-fish spot immediately ends that early cooking break and restores fishing priority. Step 13 uses a different cycle: it keeps fishing through the double spot, switches to cooking when that spot expires, and returns to fishing for the next double spawn.
 
 Cooking checkpoints count only raw and cooked harpoonfish toward the 17/19/19/28 totals. Crystallised fish do not count for this method and do not advance its exact hopper-load checkpoints. Only cooked-fish decreases observed during confirmed hopper loading advance the exact load totals. If a double catch overshoots an exact target, fishing highlighting pauses and the panel reports how many extra raw fish must be removed.
 

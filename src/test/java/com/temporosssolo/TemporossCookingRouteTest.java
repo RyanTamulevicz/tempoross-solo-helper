@@ -76,14 +76,13 @@ public class TemporossCookingRouteTest
 	}
 
 	@Test
-	public void everyFishingTripUsesTheEarlyCookBreak()
+	public void firstThreeFishingTripsUseTheEarlyCookBreak()
 	{
 		RouteStage[] fishingStages =
 		{
 			RouteStage.MIX_FISH_17,
 			RouteStage.MIX_FISH_19_FIRST,
-			RouteStage.MIX_FISH_19_SECOND,
-			RouteStage.MIX_FISH_FINAL_28
+			RouteStage.MIX_FISH_19_SECOND
 		};
 		for (RouteStage fishingStage : fishingStages)
 		{
@@ -96,6 +95,34 @@ public class TemporossCookingRouteTest
 			route.update(doubleSpot);
 			assertEquals(RouteTarget.FISH, route.getTarget(doubleSpot));
 		}
+	}
+
+	@Test
+	public void finalFishingCooksAfterDoubleExpiresAndReturnsToFishing()
+	{
+		TemporossRoute route = routeAt(RouteStage.MIX_FISH_FINAL_28);
+		RouteSnapshot beforeDouble = snapshot(8, 0, 0, 20, 60, false, false, false);
+		route.update(beforeDouble);
+		assertEquals(RouteTarget.FISH, route.getTarget(beforeDouble));
+
+		RouteSnapshot doubleActive = snapshot(12, 0, 0, 16, 60, true, false, false);
+		route.update(doubleActive);
+		assertEquals(RouteTarget.FISH, route.getTarget(doubleActive));
+
+		RouteSnapshot doubleExpired = snapshot(12, 0, 0, 16, 60, false, false, false);
+		route.update(doubleExpired);
+		assertEquals(RouteTarget.COOK, route.getTarget(doubleExpired));
+
+		RouteSnapshot cookedAfterDouble = snapshot(0, 12, 0, 16, 60, false, false, false);
+		route.update(cookedAfterDouble);
+		assertEquals(RouteTarget.FISH, route.getTarget(cookedAfterDouble));
+
+		RouteSnapshot nextDouble = snapshot(4, 12, 0, 12, 60, true, false, false);
+		route.update(nextDouble);
+		assertEquals(RouteTarget.FISH, route.getTarget(nextDouble));
+		RouteSnapshot nextDoubleExpired = snapshot(6, 12, 0, 10, 60, false, false, false);
+		route.update(nextDoubleExpired);
+		assertEquals(RouteTarget.COOK, route.getTarget(nextDoubleExpired));
 	}
 
 	@Test
@@ -218,7 +245,7 @@ public class TemporossCookingRouteTest
 			"Cook all",
 			"Load 14 in EACH cannon",
 			"Attack Tempoross",
-			"Collect & fill 5 buckets"
+			"Take & fill 5 buckets"
 		};
 
 		TemporossRoute route = new TemporossRoute(TemporossMethod.COOKING_MIX_XP_PERMITS);
@@ -227,6 +254,19 @@ public class TemporossCookingRouteTest
 			assertEquals(titles[i], route.getStage().getTitle());
 			route.next();
 		}
+
+		assertEquals(
+			"Cook when you've caught the first 8 or so, until a double fish spot comes up.",
+			routeAt(RouteStage.MIX_FISH_17).getStage().getInstruction());
+		assertEquals(
+			"Fish until a double fish spot comes up, cook after it expires, and fish the double spot again when it spawns.",
+			routeAt(RouteStage.MIX_FISH_FINAL_28).getStage().getInstruction());
+		assertEquals(
+			"Load 14 fish into first cannon.",
+			routeAt(RouteStage.MIX_LOAD_FINAL_28).getStage().getInstruction());
+		assertEquals(
+			"Take 5 buckets and fill them with water before getting kicked out.",
+			routeAt(RouteStage.MIX_POST_KILL_BUCKETS).getStage().getInstruction());
 	}
 
 	private static void completeFishCookLoad(
