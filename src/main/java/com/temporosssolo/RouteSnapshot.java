@@ -10,6 +10,9 @@ final class RouteSnapshot
 	private final boolean doubleSpotActive;
 	private final boolean spiritPoolActive;
 	private final boolean loadingFish;
+	private final int loadingHopperKey;
+	private final int waterBuckets;
+	private final int emptyBuckets;
 	private final boolean defeated;
 
 	RouteSnapshot(
@@ -23,6 +26,35 @@ final class RouteSnapshot
 		boolean loadingFish,
 		boolean defeated)
 	{
+		this(
+			rawFish,
+			cookedFish,
+			crystallisedFish,
+			freeInventorySlots,
+			essencePercent,
+			doubleSpotActive,
+			spiritPoolActive,
+			loadingFish,
+			-1,
+			0,
+			0,
+			defeated);
+	}
+
+	RouteSnapshot(
+		int rawFish,
+		int cookedFish,
+		int crystallisedFish,
+		int freeInventorySlots,
+		Integer essencePercent,
+		boolean doubleSpotActive,
+		boolean spiritPoolActive,
+		boolean loadingFish,
+		int loadingHopperKey,
+		int waterBuckets,
+		int emptyBuckets,
+		boolean defeated)
+	{
 		this.rawFish = rawFish;
 		this.cookedFish = cookedFish;
 		this.crystallisedFish = crystallisedFish;
@@ -31,6 +63,9 @@ final class RouteSnapshot
 		this.doubleSpotActive = doubleSpotActive;
 		this.spiritPoolActive = spiritPoolActive;
 		this.loadingFish = loadingFish;
+		this.loadingHopperKey = loadingHopperKey;
+		this.waterBuckets = waterBuckets;
+		this.emptyBuckets = emptyBuckets;
 		this.defeated = defeated;
 	}
 
@@ -87,6 +122,21 @@ final class RouteSnapshot
 	boolean isLoadingFish()
 	{
 		return loadingFish;
+	}
+
+	int getLoadingHopperKey()
+	{
+		return loadingHopperKey;
+	}
+
+	int getWaterBuckets()
+	{
+		return waterBuckets;
+	}
+
+	int getTotalBuckets()
+	{
+		return waterBuckets + emptyBuckets;
 	}
 
 	boolean isDefeated()

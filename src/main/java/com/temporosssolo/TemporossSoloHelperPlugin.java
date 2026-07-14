@@ -130,6 +130,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 	private int missingHudTicks;
 	private int workingSideCandidateTick = -1;
 	private int lastLoadActivityTick = -1;
+	private int lastLoadHopperKey = -1;
 	private boolean loadInteractionActive;
 	private RouteSnapshot snapshot = new RouteSnapshot(
 		0,
@@ -249,6 +250,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 		if (!isLoadStage(route.getStage()))
 		{
 			loadInteractionActive = false;
+			lastLoadHopperKey = -1;
 		}
 	}
 
@@ -312,6 +314,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 		if (loadClick)
 		{
 			lastLoadActivityTick = client.getTickCount();
+			lastLoadHopperKey = getHopperKey(npc);
 			if (!isWorkingSideKnown())
 			{
 				observeWorkingSideCandidate(npc);
@@ -415,25 +418,23 @@ public class TemporossSoloHelperPlugin extends Plugin
 			case KILL_TEMPOROSS:
 			case MIX_ATTACK_FIRST:
 			case MIX_ATTACK_SECOND:
-			case MIX_KILL_TEMPOROSS:
+			case MIX_ATTACK_FINAL:
 				return formatEssence();
 			case LOAD_THREE:
 				return Math.min(3, Math.max(0, TemporossRoute.FULL_FISH_TARGET - snapshot.getTotalFish()))
 					+ " / 3 loaded";
 			case ATTACK_TO_TEN:
 				return formatEssence() + " -> " + TemporossRoute.ESSENCE_TARGET + "%";
-			case MIX_CATCH_OPENING:
-				return cookingTargetProgress(TemporossRoute.MIX_OPENING_TARGET, "fish");
-			case MIX_COOK_OPENING:
-				return snapshot.getRawFish() + " raw left";
-			case MIX_CATCH_TO_17:
+			case MIX_FISH_17:
 				return cookingTargetProgress(TemporossRoute.MIX_FIRST_LOAD_TARGET, "fish");
-			case MIX_COOK_TO_17:
+			case MIX_COOK_17:
 				return preparedProgress(TemporossRoute.MIX_FIRST_LOAD_TARGET);
 			case MIX_LOAD_17:
 				return loadedProgress(TemporossRoute.MIX_FIRST_LOAD_TARGET);
-			case MIX_CATCH_19_FIRST:
-			case MIX_CATCH_19_SECOND:
+			case MIX_FIRES_FIRST:
+				return "Drop buckets, then fish";
+			case MIX_FISH_19_FIRST:
+			case MIX_FISH_19_SECOND:
 				return cookingTargetProgress(TemporossRoute.MIX_STANDARD_LOAD_TARGET, "fish");
 			case MIX_COOK_19_FIRST:
 			case MIX_COOK_19_SECOND:
@@ -441,20 +442,19 @@ public class TemporossSoloHelperPlugin extends Plugin
 			case MIX_LOAD_19_FIRST:
 			case MIX_LOAD_19_SECOND:
 				return loadedProgress(TemporossRoute.MIX_STANDARD_LOAD_TARGET);
-			case MIX_CATCH_FINAL:
-				return Math.min(
-					temporossFinalProgress(snapshot.getCookableFish()),
-					TemporossRoute.MIX_FINAL_LOAD_TARGET) + " / 28 fish";
-			case MIX_COOK_FINAL:
-				return Math.min(
-					temporossFinalProgress(snapshot.getPreparedFish()),
-					TemporossRoute.MIX_FINAL_LOAD_TARGET) + " / 28 cooked";
-			case MIX_LOAD_FINAL:
-				return Math.min(
-					temporossFinalProgress(route.getPreparedLoadedThisStage()),
-					TemporossRoute.MIX_FINAL_LOAD_TARGET) + " / 28 loaded";
+			case MIX_FISH_FINAL_28:
+				return cookingTargetProgress(TemporossRoute.MIX_FINAL_LOAD_TARGET, "fish");
+			case MIX_COOK_FINAL_28:
+				return preparedProgress(TemporossRoute.MIX_FINAL_LOAD_TARGET);
+			case MIX_LOAD_FINAL_28:
+				return Math.min(route.getFirstFinalHopperLoaded(), TemporossRoute.MIX_FINAL_HOPPER_TARGET)
+					+ " / 14 + "
+					+ Math.min(route.getSecondFinalHopperLoaded(), TemporossRoute.MIX_FINAL_HOPPER_TARGET)
+					+ " / 14 loaded";
+			case MIX_POST_KILL_BUCKETS:
+				return snapshot.getWaterBuckets() + " / 5 filled; "
+					+ snapshot.getTotalBuckets() + " / 5 collected";
 			case COMPLETE:
-			case MIX_COMPLETE:
 				return "Select Leave";
 			default:
 				return "";
@@ -467,6 +467,11 @@ public class TemporossSoloHelperPlugin extends Plugin
 		if (excessFish > 0)
 		{
 			return "Drop " + excessFish + " extra raw fish to keep the cooked load exact.";
+		}
+		if (route.getStage() == RouteStage.MIX_LOAD_FINAL_28
+			&& route.getFirstFinalHopperLoaded() >= TemporossRoute.MIX_FINAL_HOPPER_TARGET)
+		{
+			return "First cannon has 14. Click off and load 14 into the other cannon.";
 		}
 		return route.getStage().getInstruction();
 	}
@@ -484,11 +489,6 @@ public class TemporossSoloHelperPlugin extends Plugin
 	private String loadedProgress(int target)
 	{
 		return route.getPreparedLoadedThisStage() + " / " + target + " loaded";
-	}
-
-	private int temporossFinalProgress(int currentCycleProgress)
-	{
-		return route.getFinalBatchLoaded() + currentCycleProgress;
 	}
 
 	private String formatEssence()
@@ -561,6 +561,8 @@ public class TemporossSoloHelperPlugin extends Plugin
 		int rawFish = 0;
 		int cookedFish = 0;
 		int crystallisedFish = 0;
+		int waterBuckets = 0;
+		int emptyBuckets = 0;
 		int freeInventorySlots = TemporossRoute.FIRST_FISH_TARGET;
 		ItemContainer inventory = client.getItemContainer(InventoryID.INV);
 		if (inventory != null)
@@ -579,6 +581,12 @@ public class TemporossSoloHelperPlugin extends Plugin
 					case ItemID.TEMPOROSS_CRYSTALLISED_HARPOONFISH:
 						crystallisedFish += item.getQuantity();
 						break;
+					case ItemID.BUCKET_WATER:
+						waterBuckets += item.getQuantity();
+						break;
+					case ItemID.BUCKET_EMPTY:
+						emptyBuckets += item.getQuantity();
+						break;
 					default:
 						break;
 				}
@@ -594,6 +602,9 @@ public class TemporossSoloHelperPlugin extends Plugin
 			containsNpc(DOUBLE_FISHING_SPOT_IDS),
 			containsNpc(SPIRIT_POOL_IDS),
 			isLoadingFish(),
+			lastLoadHopperKey,
+			waterBuckets,
+			emptyBuckets,
 			defeated);
 	}
 
@@ -621,6 +632,17 @@ public class TemporossSoloHelperPlugin extends Plugin
 		return workingSide.contains(location);
 	}
 
+	boolean isPreferredLoadTarget(NPC npc)
+	{
+		return route.isPreferredLoadHopper(getHopperKey(npc));
+	}
+
+	private static int getHopperKey(NPC npc)
+	{
+		LocalPoint location = npc.getLocalLocation();
+		return (location.getX() << 16) ^ (location.getY() & 0xFFFF);
+	}
+
 	private boolean isWorkingSideKnown()
 	{
 		return workingSide.isKnown();
@@ -646,6 +668,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 			if (isLoadStage(route.getStage()) && AMMUNITION_CRATE_IDS.contains(npc.getId()))
 			{
 				lastLoadActivityTick = client.getTickCount();
+				lastLoadHopperKey = getHopperKey(npc);
 				loadInteractionActive = true;
 			}
 		}
@@ -720,6 +743,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 		workingSide.reset();
 		workingSideCandidateTick = -1;
 		lastLoadActivityTick = -1;
+		lastLoadHopperKey = -1;
 		loadInteractionActive = false;
 	}
 

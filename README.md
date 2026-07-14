@@ -39,38 +39,36 @@ Changing the method resets the current route. The selected method starts automat
 
 ## Cooking Mix of XP and permits
 
-### Trip 1 — 17 cooked
+Setup: **5 buckets of water**.
 
-1. Catch about eight raw harpoonfish and begin cooking at the highlighted shrine.
-2. If a double spot appears during the opening cook, it immediately takes priority so fishing can continue.
-3. Reach exactly 17 raw/cooked fish, cook all 17, then load exactly 17 cooked fish. Crystallised fish do not count for this method.
+1. Fish 17 harpoonfish. Cook when you've caught the first 8 or so, and cook until a double fish spot comes up.
+2. Cook all the fish.
+3. Load all 17 fish.
+4. Fires should come up now. Usually 4 appear, but sometimes 1 spreads; drop buckets after this.
+5. Fish 19 harpoonfish. Do a few, then cook until a double fish spot comes up.
+6. Cook all.
+7. Load all 19 fish. Tempoross will go down, but just keep loading it all.
+8. Attack Tempoross.
+9. Fish 19 harpoonfish. Do a few, then cook until a double fish spot comes up.
+10. Cook all.
+11. Load all 19 fish. Tempoross will go down, but just keep loading it all.
+12. Attack Tempoross.
+13. Fish 28 harpoonfish. Do a few, then cook until a double fish spot comes up.
+14. Cook all.
+15. Load 14 fish in **each** cannon. Tempoross will go down, but just keep loading it all.
+16. Attack Tempoross. If bad RNG prevents the kill, wait for the two cannons to redown him and finish him off.
+17. Once he dies, collect 5 more buckets and fill them before getting teleported out.
 
-### Trip 2 — 19 cooked
-
-1. Catch, cook, and load exactly 19 fish.
-2. Fish from the spirit pool until it closes.
-
-The panel carries the strategy's static 93% contingency note. It never reads storm intensity to change targets or issue an automatic warning; use **Next** and **Previous** for manual recovery if the in-game HUD reaches that threshold.
-
-### Trip 3 — 19 cooked
-
-1. Catch, cook, and load another exact batch of 19.
-2. Fish from the spirit pool until it closes again.
-
-### Trip 4 — 28 cooked
-
-1. Catch, cook, and load 28 fish cumulatively. If fewer than 28 inventory slots are open, the helper automatically splits the target across multiple cycles.
-2. If time is tight, the panel notes the optional six-fish second-hopper contingency.
-3. Finish Tempoross and select **Leave**.
+The fishing steps temporarily switch the primary highlight to the cooking shrine after the first 8 fish. A spawned double-fish spot immediately ends that early cooking break and restores fishing priority. If no double spot appears, the helper resumes fishing when the current raw fish are cooked.
 
 Cooking checkpoints count only raw and cooked harpoonfish toward the 17/19/19/28 totals. Crystallised fish do not count for this method and do not advance its exact hopper-load checkpoints. Only cooked-fish decreases observed during confirmed hopper loading advance the exact load totals. If a double catch overshoots an exact target, fishing highlighting pauses and the panel reports how many extra raw fish must be removed.
 
-After an exact 17- or 19-cooked load, one optional raw fish may be loaded immediately afterward. It is never required and does not count toward the cooked checkpoint.
+On the final load, the helper counts 14 fish in the first hopper, then moves the highlight to the other hopper for the remaining 14. Fire activity never gates progression: step 4 keeps the fishing target available and advances when the first fish of the next batch is caught.
 
 ## Passive guidance
 
 - Spawned double-fish spots always outrank normal fishing spots and use a separate configurable priority color.
-- Active fires on the confirmed working shore remain highlighted, but fire, dousing, bucket, filling, pump, and Humidify actions are never route stages and never block progression.
+- Active fires on the confirmed working shore remain passively highlighted. Fire detection never blocks route progression; the setup and post-kill bucket instructions are inventory guidance only.
 - Wave and tether references are static reminders only; the plugin does not predict or detect wave timing.
 
 ## Panel and recovery

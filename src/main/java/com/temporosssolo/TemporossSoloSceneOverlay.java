@@ -59,7 +59,7 @@ class TemporossSoloSceneOverlay extends Overlay
 					"Cook fish", config.highlightColor());
 				break;
 			case LOAD:
-				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.AMMUNITION_CRATE_IDS),
+				renderNpc(graphics, nearestLoadTarget(),
 					"Load fish", config.highlightColor());
 				break;
 			case ATTACK:
@@ -136,6 +136,33 @@ class TemporossSoloSceneOverlay extends Overlay
 	private NPC nearestNpc(Set<Integer> ids)
 	{
 		return nearestNpc(ids, false);
+	}
+
+	private NPC nearestLoadTarget()
+	{
+		Player player = client.getLocalPlayer();
+		if (player == null)
+		{
+			return null;
+		}
+
+		NPC nearest = null;
+		int nearestDistance = Integer.MAX_VALUE;
+		for (NPC npc : plugin.getTrackedNpcs())
+		{
+			if (!TemporossSoloHelperPlugin.AMMUNITION_CRATE_IDS.contains(npc.getId())
+				|| !plugin.isPreferredLoadTarget(npc))
+			{
+				continue;
+			}
+			int distance = npc.getLocalLocation().distanceTo(player.getLocalLocation());
+			if (distance < nearestDistance)
+			{
+				nearestDistance = distance;
+				nearest = npc;
+			}
+		}
+		return nearest;
 	}
 
 	private NPC nearestNpc(Set<Integer> ids, boolean workingSideOnly)
