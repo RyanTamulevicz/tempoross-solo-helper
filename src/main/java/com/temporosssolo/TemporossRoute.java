@@ -12,6 +12,13 @@ final class TemporossRoute
 	static final int MIX_STANDARD_LOAD_TARGET = 19;
 	static final int MIX_FINAL_LOAD_TARGET = 28;
 	static final int MIX_FINAL_HOPPER_TARGET = 14;
+	static final int PERMITS_EARLY_COOK_TARGET = 9;
+	static final int PERMITS_FIRST_LOAD_TARGET = 17;
+	static final int PERMITS_STANDARD_LOAD_TARGET = 19;
+	static final int PERMITS_FINAL_LOAD_TARGET = 2;
+	static final int PERMITS_SECOND_ATTACK_ESSENCE_TARGET = 50;
+	static final int PERMITS_LEAVE_STORM_PERCENT = 93;
+	static final int PERMITS_FIRE_BLOCKED_STORM_PERCENT = 90;
 
 	private static final RouteStage[] NO_COOKING_STAGES =
 	{
@@ -49,6 +56,27 @@ final class TemporossRoute
 		RouteStage.MIX_LOAD_FINAL_28,
 		RouteStage.MIX_ATTACK_FINAL,
 		RouteStage.MIX_POST_KILL_BUCKETS
+	};
+
+	private static final RouteStage[] MAX_PERMITS_STAGES =
+	{
+		RouteStage.PERMITS_FISH_17,
+		RouteStage.PERMITS_COOK_17,
+		RouteStage.PERMITS_LOAD_17,
+		RouteStage.PERMITS_DOUSE_SHIP,
+		RouteStage.PERMITS_FISH_19_FIRST,
+		RouteStage.PERMITS_COOK_19_FIRST,
+		RouteStage.PERMITS_LOAD_19_FIRST,
+		RouteStage.PERMITS_ATTACK_FIRST,
+		RouteStage.PERMITS_FISH_19_SECOND,
+		RouteStage.PERMITS_COOK_19_SECOND,
+		RouteStage.PERMITS_LOAD_19_SECOND,
+		RouteStage.PERMITS_ATTACK_SECOND,
+		RouteStage.PERMITS_FIREFIGHT,
+		RouteStage.PERMITS_FISH_2,
+		RouteStage.PERMITS_LOAD_2,
+		RouteStage.PERMITS_KILL,
+		RouteStage.PERMITS_COMPLETE
 	};
 
 	private TemporossMethod method;
@@ -114,6 +142,17 @@ final class TemporossRoute
 		{
 			return RouteTarget.COOK;
 		}
+		if (isPermitsCookedLoadStage(stage)
+			&& preparedLoadedThisStage > 0
+			&& getRemainingLoad() > 0
+			&& snapshot.getPreparedFish() == 0
+			&& !snapshot.isLoadingFish())
+		{
+			// A partial load ran out of fish: catch and cook the shortfall, then return to the cannon.
+			return snapshot.getRawFish() > 0 && snapshot.getCookableFish() >= getRemainingLoad()
+				? RouteTarget.COOK
+				: RouteTarget.FISH;
+		}
 		return stage.getTarget();
 	}
 
@@ -131,6 +170,13 @@ final class TemporossRoute
 				break;
 			case MIX_FISH_FINAL_28:
 				target = MIX_FINAL_LOAD_TARGET;
+				break;
+			case PERMITS_FISH_17:
+				target = PERMITS_FIRST_LOAD_TARGET;
+				break;
+			case PERMITS_FISH_19_FIRST:
+			case PERMITS_FISH_19_SECOND:
+				target = PERMITS_STANDARD_LOAD_TARGET;
 				break;
 			default:
 				return 0;
@@ -150,7 +196,8 @@ final class TemporossRoute
 
 	int getTripCount()
 	{
-		return 4;
+		RouteStage[] stages = stages();
+		return stages[stages.length - 1].getTrip();
 	}
 
 	int getFirstFinalHopperLoaded()
@@ -181,6 +228,11 @@ final class TemporossRoute
 		return preparedLoadedThisStage;
 	}
 
+	int getRemainingLoad()
+	{
+		return Math.max(0, preparedLoadTarget - preparedLoadedThisStage);
+	}
+
 	void reset()
 	{
 		stage = stages()[0];
@@ -205,13 +257,17 @@ final class TemporossRoute
 
 	void update(RouteSnapshot snapshot)
 	{
-		if (method == TemporossMethod.NO_COOKING_MAX_XP)
+		switch (method)
 		{
-			updateNoCooking(snapshot);
-		}
-		else
-		{
-			updateCooking(snapshot);
+			case NO_COOKING_MAX_XP:
+				updateNoCooking(snapshot);
+				break;
+			case COOKING_FIREFIGHTING_MAX_PERMITS:
+				updateMaxPermits(snapshot);
+				break;
+			default:
+				updateCooking(snapshot);
+				break;
 		}
 	}
 
@@ -305,7 +361,7 @@ final class TemporossRoute
 		switch (stage)
 		{
 			case MIX_FISH_17:
-				updateMixedFishing(snapshot, MIX_FIRST_LOAD_TARGET, RouteStage.MIX_COOK_17);
+				updateMixedFishing(snapshot, MIX_FIRST_LOAD_TARGET, MIX_EARLY_COOK_TARGET, RouteStage.MIX_COOK_17);
 				break;
 			case MIX_COOK_17:
 				if (allFishPrepared(snapshot, MIX_FIRST_LOAD_TARGET))
@@ -326,7 +382,7 @@ final class TemporossRoute
 				}
 				break;
 			case MIX_FISH_19_FIRST:
-				updateMixedFishing(snapshot, MIX_STANDARD_LOAD_TARGET, RouteStage.MIX_COOK_19_FIRST);
+				updateMixedFishing(snapshot, MIX_STANDARD_LOAD_TARGET, MIX_EARLY_COOK_TARGET, RouteStage.MIX_COOK_19_FIRST);
 				break;
 			case MIX_COOK_19_FIRST:
 				if (allFishPrepared(snapshot, MIX_STANDARD_LOAD_TARGET))
@@ -347,7 +403,7 @@ final class TemporossRoute
 				}
 				break;
 			case MIX_FISH_19_SECOND:
-				updateMixedFishing(snapshot, MIX_STANDARD_LOAD_TARGET, RouteStage.MIX_COOK_19_SECOND);
+				updateMixedFishing(snapshot, MIX_STANDARD_LOAD_TARGET, MIX_EARLY_COOK_TARGET, RouteStage.MIX_COOK_19_SECOND);
 				break;
 			case MIX_COOK_19_SECOND:
 				if (allFishPrepared(snapshot, MIX_STANDARD_LOAD_TARGET))
@@ -396,7 +452,149 @@ final class TemporossRoute
 		}
 	}
 
-	private void updateMixedFishing(RouteSnapshot snapshot, int target, RouteStage cookStage)
+	private void updateMaxPermits(RouteSnapshot snapshot)
+	{
+		switch (stage)
+		{
+			case PERMITS_FISH_17:
+				updateMixedFishing(snapshot, PERMITS_FIRST_LOAD_TARGET, PERMITS_EARLY_COOK_TARGET,
+					RouteStage.PERMITS_COOK_17);
+				break;
+			case PERMITS_COOK_17:
+				if (allFishPrepared(snapshot, PERMITS_FIRST_LOAD_TARGET))
+				{
+					beginPreparedLoad(snapshot, PERMITS_FIRST_LOAD_TARGET, RouteStage.PERMITS_LOAD_17);
+				}
+				break;
+			case PERMITS_LOAD_17:
+				if (preparedLoadComplete(snapshot, PERMITS_FIRST_LOAD_TARGET))
+				{
+					setStage(RouteStage.PERMITS_DOUSE_SHIP);
+				}
+				break;
+			case PERMITS_DOUSE_SHIP:
+				if (snapshot.getCookableFish() > 0)
+				{
+					setStage(RouteStage.PERMITS_FISH_19_FIRST);
+				}
+				break;
+			case PERMITS_FISH_19_FIRST:
+				if (startedEarlyLoad(snapshot, RouteStage.PERMITS_LOAD_19_FIRST))
+				{
+					break;
+				}
+				if (snapshot.getCookableFish() == PERMITS_STANDARD_LOAD_TARGET)
+				{
+					setStage(RouteStage.PERMITS_COOK_19_FIRST);
+				}
+				break;
+			case PERMITS_COOK_19_FIRST:
+				if (startedEarlyLoad(snapshot, RouteStage.PERMITS_LOAD_19_FIRST))
+				{
+					break;
+				}
+				if (allFishPrepared(snapshot, PERMITS_STANDARD_LOAD_TARGET))
+				{
+					beginPreparedLoad(snapshot, PERMITS_STANDARD_LOAD_TARGET, RouteStage.PERMITS_LOAD_19_FIRST);
+				}
+				break;
+			case PERMITS_LOAD_19_FIRST:
+				if (preparedLoadComplete(snapshot, PERMITS_STANDARD_LOAD_TARGET))
+				{
+					setStage(RouteStage.PERMITS_ATTACK_FIRST);
+				}
+				break;
+			case PERMITS_ATTACK_FIRST:
+				if (poolClosedAfterBeingSeen(snapshot))
+				{
+					setStage(RouteStage.PERMITS_FISH_19_SECOND);
+				}
+				break;
+			case PERMITS_FISH_19_SECOND:
+				if (startedEarlyLoad(snapshot, RouteStage.PERMITS_LOAD_19_SECOND))
+				{
+					break;
+				}
+				if (snapshot.getCookableFish() == PERMITS_STANDARD_LOAD_TARGET)
+				{
+					setStage(RouteStage.PERMITS_COOK_19_SECOND);
+				}
+				break;
+			case PERMITS_COOK_19_SECOND:
+				if (startedEarlyLoad(snapshot, RouteStage.PERMITS_LOAD_19_SECOND))
+				{
+					break;
+				}
+				if (allFishPrepared(snapshot, PERMITS_STANDARD_LOAD_TARGET))
+				{
+					beginPreparedLoad(snapshot, PERMITS_STANDARD_LOAD_TARGET, RouteStage.PERMITS_LOAD_19_SECOND);
+				}
+				break;
+			case PERMITS_LOAD_19_SECOND:
+				if (preparedLoadComplete(snapshot, PERMITS_STANDARD_LOAD_TARGET))
+				{
+					setStage(RouteStage.PERMITS_ATTACK_SECOND);
+				}
+				break;
+			case PERMITS_ATTACK_SECOND:
+				if (poolClosedAfterBeingSeen(snapshot)
+					|| (snapshot.getEssencePercent() != null
+						&& snapshot.getEssencePercent() < PERMITS_SECOND_ATTACK_ESSENCE_TARGET))
+				{
+					setStage(RouteStage.PERMITS_FIREFIGHT);
+				}
+				break;
+			case PERMITS_FIREFIGHT:
+				if (snapshot.getCookableFish() > 0)
+				{
+					setStage(RouteStage.PERMITS_FISH_2);
+				}
+				break;
+			case PERMITS_FISH_2:
+				if (snapshot.getCookableFish() >= PERMITS_FINAL_LOAD_TARGET)
+				{
+					beginPreparedLoad(snapshot, PERMITS_FINAL_LOAD_TARGET, RouteStage.PERMITS_LOAD_2);
+				}
+				break;
+			case PERMITS_LOAD_2:
+				if (preparedLoadComplete(snapshot, PERMITS_FINAL_LOAD_TARGET))
+				{
+					setStage(RouteStage.PERMITS_KILL);
+				}
+				break;
+			case PERMITS_KILL:
+				if (snapshot.isDefeated())
+				{
+					setStage(RouteStage.PERMITS_COMPLETE);
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	/**
+	 * When the storm forces a run to the ship before all 19 fish are cooked, the player loads
+	 * what they have. Count that partial load so the shortfall can be finished afterwards.
+	 */
+	private boolean startedEarlyLoad(RouteSnapshot snapshot, RouteStage loadStage)
+	{
+		int prepared = snapshot.getPreparedFish();
+		int previous = lastPreparedFish;
+		lastPreparedFish = prepared;
+		if (!snapshot.isLoadingFish() || prepared >= previous)
+		{
+			return false;
+		}
+
+		setStage(loadStage);
+		preparedLoadTarget = PERMITS_STANDARD_LOAD_TARGET;
+		preparedLoadedThisStage = previous - prepared;
+		lastPreparedFish = prepared;
+		return true;
+	}
+
+	private void updateMixedFishing(RouteSnapshot snapshot, int target, int earlyCookTarget, RouteStage cookStage)
 	{
 		if (snapshot.getCookableFish() == target)
 		{
@@ -406,7 +604,7 @@ final class TemporossRoute
 
 		if (!earlyCookFinished
 			&& !earlyCookActive
-			&& snapshot.getCookableFish() >= MIX_EARLY_COOK_TARGET
+			&& snapshot.getCookableFish() >= earlyCookTarget
 			&& snapshot.getRawFish() > 0)
 		{
 			earlyCookActive = true;
@@ -455,10 +653,18 @@ final class TemporossRoute
 
 	private void beginPreparedLoad(RouteSnapshot snapshot, int target, RouteStage loadStage)
 	{
+		setStage(loadStage);
 		preparedLoadTarget = target;
 		preparedLoadedThisStage = 0;
-		lastPreparedFish = snapshot.getPreparedFish();
-		setStage(loadStage);
+		lastPreparedFish = loadableFish(snapshot);
+	}
+
+	private int loadableFish(RouteSnapshot snapshot)
+	{
+		// The final two fish may be loaded raw; every other exact load counts cooked fish only.
+		return stage == RouteStage.PERMITS_LOAD_2
+			? snapshot.getCookableFish()
+			: snapshot.getPreparedFish();
 	}
 
 	private boolean preparedLoadComplete(RouteSnapshot snapshot, int expectedTarget)
@@ -467,19 +673,20 @@ final class TemporossRoute
 		{
 			preparedLoadTarget = expectedTarget;
 			preparedLoadedThisStage = 0;
-			lastPreparedFish = snapshot.getPreparedFish();
+			lastPreparedFish = loadableFish(snapshot);
 		}
 
-		if (snapshot.isLoadingFish() && snapshot.getPreparedFish() < lastPreparedFish)
+		int loadable = loadableFish(snapshot);
+		if (snapshot.isLoadingFish() && loadable < lastPreparedFish)
 		{
-			int loaded = lastPreparedFish - snapshot.getPreparedFish();
+			int loaded = lastPreparedFish - loadable;
 			preparedLoadedThisStage += loaded;
 			if (stage == RouteStage.MIX_LOAD_FINAL_28)
 			{
 				recordFinalHopperLoad(snapshot.getLoadingHopperKey(), loaded);
 			}
 		}
-		lastPreparedFish = snapshot.getPreparedFish();
+		lastPreparedFish = loadable;
 		return preparedLoadedThisStage >= preparedLoadTarget;
 	}
 
@@ -546,9 +753,15 @@ final class TemporossRoute
 
 	private RouteStage[] stages()
 	{
-		return method == TemporossMethod.NO_COOKING_MAX_XP
-			? NO_COOKING_STAGES
-			: COOKING_STAGES;
+		switch (method)
+		{
+			case NO_COOKING_MAX_XP:
+				return NO_COOKING_STAGES;
+			case COOKING_FIREFIGHTING_MAX_PERMITS:
+				return MAX_PERMITS_STAGES;
+			default:
+				return COOKING_STAGES;
+		}
 	}
 
 	private int indexOf(RouteStage candidate)
@@ -587,13 +800,35 @@ final class TemporossRoute
 		return candidate == RouteStage.MIX_FISH_17
 			|| candidate == RouteStage.MIX_FISH_19_FIRST
 			|| candidate == RouteStage.MIX_FISH_19_SECOND
-			|| candidate == RouteStage.MIX_FISH_FINAL_28;
+			|| candidate == RouteStage.MIX_FISH_FINAL_28
+			|| candidate == RouteStage.PERMITS_FISH_17;
 	}
 
 	private static boolean isEarlyCookFishingStage(RouteStage candidate)
 	{
 		return candidate == RouteStage.MIX_FISH_17
 			|| candidate == RouteStage.MIX_FISH_19_FIRST
-			|| candidate == RouteStage.MIX_FISH_19_SECOND;
+			|| candidate == RouteStage.MIX_FISH_19_SECOND
+			|| candidate == RouteStage.PERMITS_FISH_17;
+	}
+
+	/**
+	 * Stages where cannon loading must be observed: every load step, plus the max permits 19-fish
+	 * steps where the storm can force an early partial load.
+	 */
+	static boolean tracksLoading(RouteStage candidate)
+	{
+		return candidate.getTarget() == RouteTarget.LOAD
+			|| candidate == RouteStage.PERMITS_FISH_19_FIRST
+			|| candidate == RouteStage.PERMITS_COOK_19_FIRST
+			|| candidate == RouteStage.PERMITS_FISH_19_SECOND
+			|| candidate == RouteStage.PERMITS_COOK_19_SECOND;
+	}
+
+	static boolean isPermitsCookedLoadStage(RouteStage candidate)
+	{
+		return candidate == RouteStage.PERMITS_LOAD_17
+			|| candidate == RouteStage.PERMITS_LOAD_19_FIRST
+			|| candidate == RouteStage.PERMITS_LOAD_19_SECOND;
 	}
 }

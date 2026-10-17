@@ -132,6 +132,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 	private int lastLoadActivityTick = -1;
 	private int lastLoadHopperKey = -1;
 	private boolean loadInteractionActive;
+	private Integer stormIntensityPercent;
 	private RouteSnapshot snapshot = new RouteSnapshot(
 		0,
 		0,
@@ -233,6 +234,10 @@ public class TemporossSoloHelperPlugin extends Plugin
 		}
 
 		updateWorkingSideFromInteraction();
+		stormIntensityPercent = readHudPercent(
+			InterfaceID.TemporossHud.STORM_INTENSITY,
+			InterfaceID.TemporossHud.STORM_INTENSITY_BAR,
+			InterfaceID.TemporossHud.STORM_INTENSITY_BAR_BACK);
 		RouteStage stageBeforeUpdate = route.getStage();
 		int fishBeforeUpdate = snapshot.getTotalFish();
 		snapshot = buildSnapshot();
@@ -454,6 +459,37 @@ public class TemporossSoloHelperPlugin extends Plugin
 			case MIX_POST_KILL_BUCKETS:
 				return snapshot.getWaterBuckets() + " / 5 filled; "
 					+ snapshot.getTotalBuckets() + " / 5 collected";
+			case PERMITS_FISH_17:
+				return cookingTargetProgress(TemporossRoute.PERMITS_FIRST_LOAD_TARGET, "fish");
+			case PERMITS_COOK_17:
+				return preparedProgress(TemporossRoute.PERMITS_FIRST_LOAD_TARGET);
+			case PERMITS_LOAD_17:
+				return loadedProgress(TemporossRoute.PERMITS_FIRST_LOAD_TARGET);
+			case PERMITS_FISH_19_FIRST:
+			case PERMITS_FISH_19_SECOND:
+				return cookingTargetProgress(TemporossRoute.PERMITS_STANDARD_LOAD_TARGET, "fish")
+					+ "; " + formatStorm();
+			case PERMITS_COOK_19_FIRST:
+			case PERMITS_COOK_19_SECOND:
+				return preparedProgress(TemporossRoute.PERMITS_STANDARD_LOAD_TARGET) + "; " + formatStorm();
+			case PERMITS_LOAD_19_FIRST:
+			case PERMITS_LOAD_19_SECOND:
+				return loadedProgress(TemporossRoute.PERMITS_STANDARD_LOAD_TARGET);
+			case PERMITS_ATTACK_FIRST:
+			case PERMITS_KILL:
+				return formatEssence();
+			case PERMITS_ATTACK_SECOND:
+				return formatEssence() + " -> <" + TemporossRoute.PERMITS_SECOND_ATTACK_ESSENCE_TARGET + "%";
+			case PERMITS_DOUSE_SHIP:
+			case PERMITS_FIREFIGHT:
+				return snapshot.getWaterBuckets() + " water buckets; " + formatStorm();
+			case PERMITS_FISH_2:
+				return cookingTargetProgress(TemporossRoute.PERMITS_FINAL_LOAD_TARGET, "fish")
+					+ "; " + formatStorm();
+			case PERMITS_LOAD_2:
+				return loadedProgress(TemporossRoute.PERMITS_FINAL_LOAD_TARGET);
+			case PERMITS_COMPLETE:
+				return snapshot.getWaterBuckets() + " water buckets";
 			case COMPLETE:
 				return "Select Leave";
 			default:
@@ -473,7 +509,22 @@ public class TemporossSoloHelperPlugin extends Plugin
 		{
 			return "First cannon has 14. Click off and load 14 into the other cannon.";
 		}
-		return route.getStage().getInstruction();
+		RouteStage stage = route.getStage();
+		if (TemporossRoute.isPermitsCookedLoadStage(stage)
+			&& route.getPreparedLoadedThisStage() > 0
+			&& route.getRemainingLoad() > 0
+			&& snapshot.getPreparedFish() == 0)
+		{
+			return "Loaded " + route.getPreparedLoadedThisStage() + ". Catch and cook "
+				+ route.getRemainingLoad() + " more, then load them.";
+		}
+		if (isPermitsStormDeadlineStage(stage)
+			&& stormIntensityPercent != null
+			&& stormIntensityPercent >= TemporossRoute.PERMITS_FIRE_BLOCKED_STORM_PERCENT)
+		{
+			return "Storm " + stormIntensityPercent + "%: head to the ship and load your cooked fish now (93% at the latest).";
+		}
+		return stage.getInstruction();
 	}
 
 	private String cookingTargetProgress(int target, String unit)
@@ -489,6 +540,21 @@ public class TemporossSoloHelperPlugin extends Plugin
 	private String loadedProgress(int target)
 	{
 		return route.getPreparedLoadedThisStage() + " / " + target + " loaded";
+	}
+
+	private String formatStorm()
+	{
+		return stormIntensityPercent == null
+			? "storm: read HUD"
+			: "storm " + stormIntensityPercent + "%";
+	}
+
+	private static boolean isPermitsStormDeadlineStage(RouteStage stage)
+	{
+		return stage == RouteStage.PERMITS_FISH_19_FIRST
+			|| stage == RouteStage.PERMITS_COOK_19_FIRST
+			|| stage == RouteStage.PERMITS_FISH_19_SECOND
+			|| stage == RouteStage.PERMITS_COOK_19_SECOND;
 	}
 
 	private String formatEssence()
@@ -540,6 +606,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 		inEncounter = false;
 		defeated = false;
 		missingHudTicks = 0;
+		stormIntensityPercent = null;
 		resetWorkingSide();
 		trackedObjects.clear();
 		trackedNpcs.clear();
@@ -722,7 +789,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 
 	private static boolean isLoadStage(RouteStage stage)
 	{
-		return stage.getTarget() == RouteTarget.LOAD;
+		return TemporossRoute.tracksLoading(stage);
 	}
 
 	private List<NPC> getTrackedAmmunitionCrates()
@@ -749,15 +816,22 @@ public class TemporossSoloHelperPlugin extends Plugin
 
 	private Integer readEssencePercent()
 	{
-		Widget essence = client.getWidget(InterfaceID.TemporossHud.ESSENCE);
-		Integer textPercent = findPercent(essence);
+		return readHudPercent(
+			InterfaceID.TemporossHud.ESSENCE,
+			InterfaceID.TemporossHud.ESSENCE_BAR,
+			InterfaceID.TemporossHud.ESSENCE_BAR_BACK);
+	}
+
+	private Integer readHudPercent(int textComponent, int barComponent, int backComponent)
+	{
+		Integer textPercent = findPercent(client.getWidget(textComponent));
 		if (textPercent != null)
 		{
 			return textPercent;
 		}
 
-		Widget bar = client.getWidget(InterfaceID.TemporossHud.ESSENCE_BAR);
-		Widget back = client.getWidget(InterfaceID.TemporossHud.ESSENCE_BAR_BACK);
+		Widget bar = client.getWidget(barComponent);
+		Widget back = client.getWidget(backComponent);
 		if (isVisible(bar) && isVisible(back) && back.getBounds().width > 0)
 		{
 			return Math.max(0, Math.min(100,

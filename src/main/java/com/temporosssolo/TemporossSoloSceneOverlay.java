@@ -47,7 +47,8 @@ class TemporossSoloSceneOverlay extends Overlay
 			return null;
 		}
 
-		switch (plugin.getTarget())
+		RouteTarget target = plugin.getTarget();
+		switch (target)
 		{
 			case NONE:
 				break;
@@ -66,13 +67,20 @@ class TemporossSoloSceneOverlay extends Overlay
 				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.SPIRIT_POOL_IDS),
 					"Harpoon Tempoross", config.highlightColor());
 				break;
+			case DOUSE:
+				// The ship flame can sit across the shore split, so the douse step targets the nearest fire anywhere.
+				renderFire(graphics, "Douse fire", config.urgentColor(), false);
+				break;
 			case LEAVE:
 				renderNpc(graphics, nearestNpc(TemporossSoloHelperPlugin.VICTORY_NPC_IDS),
 					"Leave", config.highlightColor());
 				break;
 		}
 
-		renderFire(graphics, "Douse", config.urgentColor());
+		if (target != RouteTarget.DOUSE)
+		{
+			renderFire(graphics, "Douse", config.urgentColor(), true);
+		}
 		return null;
 	}
 
@@ -89,15 +97,15 @@ class TemporossSoloSceneOverlay extends Overlay
 			"Fish", config.highlightColor());
 	}
 
-	private void renderFire(Graphics2D graphics, String label, Color color)
+	private void renderFire(Graphics2D graphics, String label, Color color, boolean workingSideOnly)
 	{
-		NPC fireNpc = nearestNpc(TemporossSoloHelperPlugin.FIRE_NPC_IDS, true);
+		NPC fireNpc = nearestNpc(TemporossSoloHelperPlugin.FIRE_NPC_IDS, workingSideOnly);
 		if (fireNpc != null)
 		{
 			renderNpc(graphics, fireNpc, label, color);
 			return;
 		}
-		renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.FIRE_OBJECT_IDS, true), label, color);
+		renderObject(graphics, nearestObject(TemporossSoloHelperPlugin.FIRE_OBJECT_IDS, workingSideOnly), label, color);
 	}
 
 	private GameObject nearestObject(Set<Integer> ids)
