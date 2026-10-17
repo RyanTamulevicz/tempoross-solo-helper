@@ -6,6 +6,7 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.Keybind;
+import net.runelite.client.config.Range;
 
 @ConfigGroup(TemporossSoloHelperConfig.GROUP)
 public interface TemporossSoloHelperConfig extends Config
@@ -20,6 +21,17 @@ public interface TemporossSoloHelperConfig extends Config
 	default TemporossMethod method()
 	{
 		return TemporossMethod.NO_COOKING_MAX_XP;
+	}
+
+	@Range(min = 2, max = 28)
+	@ConfigItem(
+		keyName = "finalFishAmount",
+		name = "Final fish amount",
+		description = "Final cooking-method target (2-28). Split between cannons; odd amounts put the extra fish in the second cannon. Changing this resets the route."
+	)
+	default int finalFishAmount()
+	{
+		return 22;
 	}
 
 	@ConfigItem(

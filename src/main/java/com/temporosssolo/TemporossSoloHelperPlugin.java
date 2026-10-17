@@ -180,6 +180,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 	protected void startUp()
 	{
 		route.setMethod(config.method());
+		route.setFinalFishAmount(config.finalFishAmount());
 		overlayManager.add(panelOverlay);
 		overlayManager.add(sceneOverlay);
 		keyManager.registerKeyListener(nextStepListener);
@@ -193,7 +194,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 	public void onConfigChanged(ConfigChanged event)
 	{
 		if (!TemporossSoloHelperConfig.GROUP.equals(event.getGroup())
-			|| !"method".equals(event.getKey()))
+			|| (!"method".equals(event.getKey()) && !"finalFishAmount".equals(event.getKey())))
 		{
 			return;
 		}
@@ -201,6 +202,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 		clientThread.invoke(() ->
 		{
 			route.setMethod(config.method());
+			route.setFinalFishAmount(config.finalFishAmount());
 			resetWorkingSide();
 			refreshAmmunitionCrateLocations();
 			if (inEncounter)
@@ -442,15 +444,15 @@ public class TemporossSoloHelperPlugin extends Plugin
 			case MIX_LOAD_19_FIRST:
 			case MIX_LOAD_19_SECOND:
 				return loadedProgress(TemporossRoute.MIX_STANDARD_LOAD_TARGET);
-			case MIX_FISH_FINAL_28:
-				return cookingTargetProgress(TemporossRoute.MIX_FINAL_LOAD_TARGET, "fish");
-			case MIX_COOK_FINAL_28:
-				return preparedProgress(TemporossRoute.MIX_FINAL_LOAD_TARGET);
-			case MIX_LOAD_FINAL_28:
-				return Math.min(route.getFirstFinalHopperLoaded(), TemporossRoute.MIX_FINAL_HOPPER_TARGET)
-					+ " / 14 + "
-					+ Math.min(route.getSecondFinalHopperLoaded(), TemporossRoute.MIX_FINAL_HOPPER_TARGET)
-					+ " / 14 loaded";
+			case MIX_FISH_FINAL_22:
+				return cookingTargetProgress(route.getFinalLoadTarget(), "fish");
+			case MIX_COOK_FINAL_22:
+				return preparedProgress(route.getFinalLoadTarget());
+			case MIX_LOAD_FINAL_22:
+				return Math.min(route.getFirstFinalHopperLoaded(), route.getFirstFinalHopperTarget())
+					+ " / " + route.getFirstFinalHopperTarget() + " + "
+					+ Math.min(route.getSecondFinalHopperLoaded(), route.getSecondFinalHopperTarget())
+					+ " / " + route.getSecondFinalHopperTarget() + " loaded";
 			case MIX_POST_KILL_BUCKETS:
 				return snapshot.getWaterBuckets() + " / 5 filled; "
 					+ snapshot.getTotalBuckets() + " / 5 collected";
@@ -461,6 +463,11 @@ public class TemporossSoloHelperPlugin extends Plugin
 		}
 	}
 
+	String getStageTitle()
+	{
+		return route.getStageTitle();
+	}
+
 	String getInstructionText()
 	{
 		int excessFish = route.getExcessFish(snapshot);
@@ -468,10 +475,15 @@ public class TemporossSoloHelperPlugin extends Plugin
 		{
 			return "Drop " + excessFish + " extra raw fish to keep the cooked load exact.";
 		}
-		if (route.getStage() == RouteStage.MIX_LOAD_FINAL_28
-			&& route.getFirstFinalHopperLoaded() >= TemporossRoute.MIX_FINAL_HOPPER_TARGET)
+		if (route.getStage() == RouteStage.MIX_LOAD_FINAL_22
+			&& route.getFirstFinalHopperLoaded() >= route.getFirstFinalHopperTarget())
 		{
-			return "First cannon has 14. Click off and load 14 into the other cannon.";
+			return "First cannon has " + route.getFirstFinalHopperTarget()
+				+ ". Click off and load " + route.getSecondFinalHopperTarget() + " into the other cannon.";
+		}
+		if (route.getStage() == RouteStage.MIX_LOAD_FINAL_22)
+		{
+			return "Load " + route.getFirstFinalHopperTarget() + " fish into first cannon.";
 		}
 		return route.getStage().getInstruction();
 	}
@@ -528,6 +540,7 @@ public class TemporossSoloHelperPlugin extends Plugin
 		defeated = false;
 		resetWorkingSide();
 		route.setMethod(config.method());
+		route.setFinalFishAmount(config.finalFishAmount());
 		route.reset();
 		snapshot = buildSnapshot();
 		scanSceneOnce();

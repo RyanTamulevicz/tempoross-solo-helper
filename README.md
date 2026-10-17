@@ -55,15 +55,15 @@ Setup before entering: have **5 buckets of water in your inventory**.
 12. Attack Tempoross.
 13. Fish until a double fish spot comes up, cook after the spot expires, and fish the double spot again when it spawns.
 14. Cook all.
-15. Load 14 fish into the first cannon, then load 14 into the second cannon.
+15. Load 11 fish into the first cannon, then load 11 into the second cannon.
 16. Attack Tempoross. If bad RNG prevents the kill, wait for the two cannons to redown him and finish him off.
 17. Once he dies, take 5 buckets and fill them with water before getting kicked out.
 
 The 17/19/19 fishing steps temporarily switch the primary highlight to the cooking shrine after the first 8 fish. A spawned double-fish spot immediately ends that early cooking break and restores fishing priority. Step 13 uses a different cycle: it keeps fishing through the double spot, switches to cooking when that spot expires, and returns to fishing for the next double spawn.
 
-Cooking checkpoints count only raw and cooked harpoonfish toward the 17/19/19/28 totals. Crystallised fish do not count for this method and do not advance its exact hopper-load checkpoints. Only cooked-fish decreases observed during confirmed hopper loading advance the exact load totals. If a double catch overshoots an exact target, fishing highlighting pauses and the panel reports how many extra raw fish must be removed.
+Cooking checkpoints count only raw and cooked harpoonfish toward the 17/19/19/22 totals. Crystallised fish do not count for this method and do not advance its exact hopper-load checkpoints. Only cooked-fish decreases observed during confirmed hopper loading advance the exact load totals. If a double catch overshoots an exact target, fishing highlighting pauses and the panel reports how many extra raw fish must be removed.
 
-On the final load, the helper counts 14 fish in the first hopper, then moves the highlight to the other hopper for the remaining 14. Fire activity never gates progression: step 4 keeps the fishing target available and advances when the first fish of the next batch is caught.
+On the final load, the helper counts 11 fish in the first hopper, then moves the highlight to the other hopper for the remaining 11. Fire activity never gates progression: step 4 keeps the fishing target available and advances when the first fish of the next batch is caught.
 
 ## Passive guidance
 
@@ -85,3 +85,5 @@ This project targets Java 11 and the current RuneLite release.
 ```
 
 The `run` task launches a development RuneLite client. In-game behavior must be tested manually; never automate RuneScape input.
+
+The **Final fish amount** setting changes the cooking method's final catch, cook, and load target (2?28, default 22). The first three trips remain 17/19/19. The total is split between the two cannons; odd totals put the extra fish in the second cannon. Changing the setting resets the route.

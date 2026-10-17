@@ -12,6 +12,39 @@ public class TemporossCookingRouteTest
 	private static final int SECOND_HOPPER = 202;
 
 	@Test
+	public void configurableFinalTargetsDriveFishingCookingAndCannonSplit()
+	{
+		for (int amount : new int[] {2, 22, 23, 28})
+		{
+			TemporossRoute route = new TemporossRoute(TemporossMethod.COOKING_MIX_XP_PERMITS);
+			route.setFinalFishAmount(amount);
+			while (route.getStage() != RouteStage.MIX_FISH_FINAL_22)
+			{
+				route.next();
+			}
+			assertEquals("Fish " + amount + " harpoonfish", route.getStageTitle());
+			updateAndAssert(route, snapshot(amount - 1, 0, 0, 29 - amount, 60, false, false, false),
+				RouteStage.MIX_FISH_FINAL_22);
+			updateAndAssert(route, snapshot(amount, 0, 0, 28 - amount, 60, false, false, false),
+				RouteStage.MIX_COOK_FINAL_22);
+			updateAndAssert(route, snapshot(0, amount, 0, 28 - amount, 60, false, false, false),
+				RouteStage.MIX_LOAD_FINAL_22);
+			int first = amount / 2;
+			int second = amount - first;
+			assertEquals(first, route.getFirstFinalHopperTarget());
+			assertEquals(second, route.getSecondFinalHopperTarget());
+			updateAndAssert(route, loading(second, FIRST_HOPPER), RouteStage.MIX_LOAD_FINAL_22);
+			assertEquals(first, route.getFirstFinalHopperLoaded());
+			assertFalse(route.isPreferredLoadHopper(FIRST_HOPPER));
+			updateAndAssert(route, loading(0, SECOND_HOPPER), RouteStage.MIX_ATTACK_FINAL);
+			assertEquals(second, route.getSecondFinalHopperLoaded());
+			route.setFinalFishAmount(amount == 22 ? 28 : 22);
+			assertEquals(RouteStage.MIX_FISH_17, route.getStage());
+			assertEquals(0, route.getFirstFinalHopperLoaded());
+		}
+	}
+
+	@Test
 	public void followsCompleteSeventeenStepCookingRoute()
 	{
 		TemporossRoute route = new TemporossRoute(TemporossMethod.COOKING_MIX_XP_PERMITS);
@@ -39,22 +72,43 @@ public class TemporossCookingRouteTest
 
 		completeFishCookLoad(route, 19, RouteStage.MIX_COOK_19_SECOND,
 			RouteStage.MIX_LOAD_19_SECOND, RouteStage.MIX_ATTACK_SECOND, FIRST_HOPPER);
-		closePoolAndAssert(route, RouteStage.MIX_FISH_FINAL_28);
+		closePoolAndAssert(route, RouteStage.MIX_FISH_FINAL_22);
 
-		updateAndAssert(route, snapshot(28, 0, 0, 0, 60, false, false, false),
-			RouteStage.MIX_COOK_FINAL_28);
-		updateAndAssert(route, snapshot(0, 28, 0, 0, 60, false, false, false),
-			RouteStage.MIX_LOAD_FINAL_28);
-		updateAndAssert(route, loading(14, FIRST_HOPPER), RouteStage.MIX_LOAD_FINAL_28);
-		assertEquals(14, route.getFirstFinalHopperLoaded());
+		updateAndAssert(route, snapshot(22, 0, 0, 6, 60, false, false, false),
+			RouteStage.MIX_COOK_FINAL_22);
+		updateAndAssert(route, snapshot(0, 22, 0, 6, 60, false, false, false),
+			RouteStage.MIX_LOAD_FINAL_22);
+		updateAndAssert(route, loading(11, FIRST_HOPPER), RouteStage.MIX_LOAD_FINAL_22);
+		assertEquals(11, route.getFirstFinalHopperLoaded());
 		assertFalse(route.isPreferredLoadHopper(FIRST_HOPPER));
 		assertTrue(route.isPreferredLoadHopper(SECOND_HOPPER));
 		updateAndAssert(route, loading(0, SECOND_HOPPER), RouteStage.MIX_ATTACK_FINAL);
-		assertEquals(14, route.getSecondFinalHopperLoaded());
+		assertEquals(11, route.getSecondFinalHopperLoaded());
 
 		updateAndAssert(route, snapshot(0, 0, 0, 28, 0, false, false, true),
 			RouteStage.MIX_POST_KILL_BUCKETS);
 		assertEquals(17, route.getStageNumber());
+	}
+
+	@Test
+	public void finalFishingRequiresExactlyTwentyTwoFish()
+	{
+		TemporossRoute route = routeAt(RouteStage.MIX_FISH_FINAL_22);
+		RouteSnapshot excess = snapshot(23, 0, 0, 5, 60, false, false, false);
+		route.update(excess);
+		assertEquals(RouteStage.MIX_FISH_FINAL_22, route.getStage());
+		assertEquals(1, route.getExcessFish(excess));
+		assertEquals(RouteTarget.NONE, route.getTarget(excess));
+		updateAndAssert(route, snapshot(21, 0, 0, 7, 60, false, false, false),
+			RouteStage.MIX_FISH_FINAL_22);
+		updateAndAssert(route, snapshot(22, 0, 0, 6, 60, false, false, false),
+			RouteStage.MIX_COOK_FINAL_22);
+		updateAndAssert(route, snapshot(1, 21, 0, 6, 60, false, false, false),
+			RouteStage.MIX_COOK_FINAL_22);
+		updateAndAssert(route, snapshot(0, 21, 0, 7, 60, false, false, false),
+			RouteStage.MIX_COOK_FINAL_22);
+		updateAndAssert(route, snapshot(0, 22, 0, 6, 60, false, false, false),
+			RouteStage.MIX_LOAD_FINAL_22);
 	}
 
 	@Test
@@ -100,7 +154,7 @@ public class TemporossCookingRouteTest
 	@Test
 	public void finalFishingCooksAfterDoubleExpiresAndReturnsToFishing()
 	{
-		TemporossRoute route = routeAt(RouteStage.MIX_FISH_FINAL_28);
+		TemporossRoute route = routeAt(RouteStage.MIX_FISH_FINAL_22);
 		RouteSnapshot beforeDouble = snapshot(8, 0, 0, 20, 60, false, false, false);
 		route.update(beforeDouble);
 		assertEquals(RouteTarget.FISH, route.getTarget(beforeDouble));
@@ -241,9 +295,9 @@ public class TemporossCookingRouteTest
 			"Cook all",
 			"Load all 19 fish",
 			"Attack Tempoross",
-			"Fish 28 harpoonfish",
+			"Fish 22 harpoonfish",
 			"Cook all",
-			"Load 14 in EACH cannon",
+			"Load 11 in EACH cannon",
 			"Attack Tempoross",
 			"Take & fill 5 buckets"
 		};
@@ -260,10 +314,10 @@ public class TemporossCookingRouteTest
 			routeAt(RouteStage.MIX_FISH_17).getStage().getInstruction());
 		assertEquals(
 			"Fish until a double fish spot comes up, cook after it expires, and fish the double spot again when it spawns.",
-			routeAt(RouteStage.MIX_FISH_FINAL_28).getStage().getInstruction());
+			routeAt(RouteStage.MIX_FISH_FINAL_22).getStage().getInstruction());
 		assertEquals(
-			"Load 14 fish into first cannon.",
-			routeAt(RouteStage.MIX_LOAD_FINAL_28).getStage().getInstruction());
+			"Load 11 fish into first cannon.",
+			routeAt(RouteStage.MIX_LOAD_FINAL_22).getStage().getInstruction());
 		assertEquals(
 			"Take 5 buckets and fill them with water before getting kicked out.",
 			routeAt(RouteStage.MIX_POST_KILL_BUCKETS).getStage().getInstruction());

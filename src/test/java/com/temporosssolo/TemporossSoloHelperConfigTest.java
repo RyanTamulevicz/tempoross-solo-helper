@@ -14,5 +14,6 @@ public class TemporossSoloHelperConfigTest
 		};
 
 		assertEquals(TemporossMethod.NO_COOKING_MAX_XP, config.method());
+		assertEquals(22, config.finalFishAmount());
 	}
 }

@@ -43,7 +43,7 @@ class TemporossSoloPanelOverlay extends OverlayPanel
 
 		RouteStage stage = plugin.getStage();
 		panelComponent.getChildren().add(TitleComponent.builder()
-			.text(stage.getTitle())
+			.text(plugin.getStageTitle())
 			.color(config.highlightColor())
 			.build());
 		panelComponent.getChildren().add(LineComponent.builder()

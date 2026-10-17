@@ -10,8 +10,8 @@ final class TemporossRoute
 	static final int MIX_EARLY_COOK_TARGET = 8;
 	static final int MIX_FIRST_LOAD_TARGET = 17;
 	static final int MIX_STANDARD_LOAD_TARGET = 19;
-	static final int MIX_FINAL_LOAD_TARGET = 28;
-	static final int MIX_FINAL_HOPPER_TARGET = 14;
+	private int finalLoadTarget = 22;
+	
 
 	private static final RouteStage[] NO_COOKING_STAGES =
 	{
@@ -44,9 +44,9 @@ final class TemporossRoute
 		RouteStage.MIX_COOK_19_SECOND,
 		RouteStage.MIX_LOAD_19_SECOND,
 		RouteStage.MIX_ATTACK_SECOND,
-		RouteStage.MIX_FISH_FINAL_28,
-		RouteStage.MIX_COOK_FINAL_28,
-		RouteStage.MIX_LOAD_FINAL_28,
+		RouteStage.MIX_FISH_FINAL_22,
+		RouteStage.MIX_COOK_FINAL_22,
+		RouteStage.MIX_LOAD_FINAL_22,
 		RouteStage.MIX_ATTACK_FINAL,
 		RouteStage.MIX_POST_KILL_BUCKETS
 	};
@@ -75,6 +75,44 @@ final class TemporossRoute
 	{
 		this.method = method;
 		reset();
+	}
+
+	void setFinalFishAmount(int amount)
+	{
+		int target = Math.max(2, Math.min(28, amount));
+		if (finalLoadTarget != target)
+		{
+			finalLoadTarget = target;
+			reset();
+		}
+	}
+
+	int getFinalLoadTarget()
+	{
+		return finalLoadTarget;
+	}
+
+	int getFirstFinalHopperTarget()
+	{
+		return finalLoadTarget / 2;
+	}
+
+	int getSecondFinalHopperTarget()
+	{
+		return finalLoadTarget - getFirstFinalHopperTarget();
+	}
+
+	String getStageTitle()
+	{
+		if (stage == RouteStage.MIX_FISH_FINAL_22)
+		{
+			return "Fish " + finalLoadTarget + " harpoonfish";
+		}
+		if (stage == RouteStage.MIX_LOAD_FINAL_22)
+		{
+			return "Load " + getFirstFinalHopperTarget() + " + " + getSecondFinalHopperTarget() + " into cannons";
+		}
+		return stage.getTitle();
 	}
 
 	TemporossMethod getMethod()
@@ -106,7 +144,7 @@ final class TemporossRoute
 		{
 			return RouteTarget.COOK;
 		}
-		if (stage == RouteStage.MIX_FISH_FINAL_28
+		if (stage == RouteStage.MIX_FISH_FINAL_22
 			&& finalDoubleSpotSeen
 			&& !finalDoubleCookFinished
 			&& !snapshot.isDoubleSpotActive()
@@ -129,8 +167,8 @@ final class TemporossRoute
 			case MIX_FISH_19_SECOND:
 				target = MIX_STANDARD_LOAD_TARGET;
 				break;
-			case MIX_FISH_FINAL_28:
-				target = MIX_FINAL_LOAD_TARGET;
+			case MIX_FISH_FINAL_22:
+				target = finalLoadTarget;
 				break;
 			default:
 				return 0;
@@ -165,9 +203,9 @@ final class TemporossRoute
 
 	boolean isPreferredLoadHopper(int hopperKey)
 	{
-		if (stage != RouteStage.MIX_LOAD_FINAL_28
+		if (stage != RouteStage.MIX_LOAD_FINAL_22
 			|| firstFinalHopperKey < 0
-			|| firstFinalHopperLoaded < MIX_FINAL_HOPPER_TARGET)
+			|| firstFinalHopperLoaded < getFirstFinalHopperTarget())
 		{
 			return true;
 		}
@@ -364,21 +402,21 @@ final class TemporossRoute
 			case MIX_ATTACK_SECOND:
 				if (poolClosedAfterBeingSeen(snapshot))
 				{
-					setStage(RouteStage.MIX_FISH_FINAL_28);
+					setStage(RouteStage.MIX_FISH_FINAL_22);
 				}
 				break;
-			case MIX_FISH_FINAL_28:
+			case MIX_FISH_FINAL_22:
 				updateFinalFishing(snapshot);
 				break;
-			case MIX_COOK_FINAL_28:
-				if (allFishPrepared(snapshot, MIX_FINAL_LOAD_TARGET))
+			case MIX_COOK_FINAL_22:
+				if (allFishPrepared(snapshot, finalLoadTarget))
 				{
 					resetFinalHopperTracking();
-					beginPreparedLoad(snapshot, MIX_FINAL_LOAD_TARGET, RouteStage.MIX_LOAD_FINAL_28);
+					beginPreparedLoad(snapshot, finalLoadTarget, RouteStage.MIX_LOAD_FINAL_22);
 				}
 				break;
-			case MIX_LOAD_FINAL_28:
-				if (preparedLoadComplete(snapshot, MIX_FINAL_LOAD_TARGET))
+			case MIX_LOAD_FINAL_22:
+				if (preparedLoadComplete(snapshot, finalLoadTarget))
 				{
 					setStage(RouteStage.MIX_ATTACK_FINAL);
 				}
@@ -422,9 +460,9 @@ final class TemporossRoute
 
 	private void updateFinalFishing(RouteSnapshot snapshot)
 	{
-		if (snapshot.getCookableFish() == MIX_FINAL_LOAD_TARGET)
+		if (snapshot.getCookableFish() == finalLoadTarget)
 		{
-			setStage(RouteStage.MIX_COOK_FINAL_28);
+			setStage(RouteStage.MIX_COOK_FINAL_22);
 			return;
 		}
 
@@ -474,7 +512,7 @@ final class TemporossRoute
 		{
 			int loaded = lastPreparedFish - snapshot.getPreparedFish();
 			preparedLoadedThisStage += loaded;
-			if (stage == RouteStage.MIX_LOAD_FINAL_28)
+			if (stage == RouteStage.MIX_LOAD_FINAL_22)
 			{
 				recordFinalHopperLoad(snapshot.getLoadingHopperKey(), loaded);
 			}
@@ -572,7 +610,7 @@ final class TemporossRoute
 		{
 			resetEarlyCookTracking();
 		}
-		if (stage == RouteStage.MIX_FISH_FINAL_28)
+		if (stage == RouteStage.MIX_FISH_FINAL_22)
 		{
 			resetFinalDoubleTracking();
 		}
@@ -587,7 +625,7 @@ final class TemporossRoute
 		return candidate == RouteStage.MIX_FISH_17
 			|| candidate == RouteStage.MIX_FISH_19_FIRST
 			|| candidate == RouteStage.MIX_FISH_19_SECOND
-			|| candidate == RouteStage.MIX_FISH_FINAL_28;
+			|| candidate == RouteStage.MIX_FISH_FINAL_22;
 	}
 
 	private static boolean isEarlyCookFishingStage(RouteStage candidate)

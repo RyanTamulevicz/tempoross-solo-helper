@@ -28,9 +28,9 @@ enum RouteStage
 	MIX_COOK_19_SECOND(3, "Cook all", "Cook all the fish.", RouteTarget.COOK),
 	MIX_LOAD_19_SECOND(3, "Load all 19 fish", "Tempoross will go down, but just keep loading it all.", RouteTarget.LOAD),
 	MIX_ATTACK_SECOND(3, "Attack Tempoross", "Attack Tempoross.", RouteTarget.ATTACK),
-	MIX_FISH_FINAL_28(4, "Fish 28 harpoonfish", "Fish until a double fish spot comes up, cook after it expires, and fish the double spot again when it spawns.", RouteTarget.FISH),
-	MIX_COOK_FINAL_28(4, "Cook all", "Cook all the fish.", RouteTarget.COOK),
-	MIX_LOAD_FINAL_28(4, "Load 14 in EACH cannon", "Load 14 fish into first cannon.", RouteTarget.LOAD),
+	MIX_FISH_FINAL_22(4, "Fish 22 harpoonfish", "Fish until a double fish spot comes up, cook after it expires, and fish the double spot again when it spawns.", RouteTarget.FISH),
+	MIX_COOK_FINAL_22(4, "Cook all", "Cook all the fish.", RouteTarget.COOK),
+	MIX_LOAD_FINAL_22(4, "Load 11 in EACH cannon", "Load 11 fish into first cannon.", RouteTarget.LOAD),
 	MIX_ATTACK_FINAL(4, "Attack Tempoross", "If bad RNG prevents the kill, the two cannons will redown him. Wait, then finish him off.", RouteTarget.ATTACK),
 	MIX_POST_KILL_BUCKETS(4, "Take & fill 5 buckets", "Take 5 buckets and fill them with water before getting kicked out.", RouteTarget.NONE);
 
