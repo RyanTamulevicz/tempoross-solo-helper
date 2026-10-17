@@ -32,7 +32,25 @@ enum RouteStage
 	MIX_COOK_FINAL_28(4, "Cook all", "Cook all the fish.", RouteTarget.COOK),
 	MIX_LOAD_FINAL_28(4, "Load 14 in EACH cannon", "Load 14 fish into first cannon.", RouteTarget.LOAD),
 	MIX_ATTACK_FINAL(4, "Attack Tempoross", "If bad RNG prevents the kill, the two cannons will redown him. Wait, then finish him off.", RouteTarget.ATTACK),
-	MIX_POST_KILL_BUCKETS(4, "Take & fill 5 buckets", "Take 5 buckets and fill them with water before getting kicked out.", RouteTarget.NONE);
+	MIX_POST_KILL_BUCKETS(4, "Take & fill 5 buckets", "Take 5 buckets and fill them with water before getting kicked out.", RouteTarget.NONE),
+
+	PERMITS_FISH_17(1, "Fish 17 harpoonfish", "Fish the nearest spot. Cook after 9, then fish the double spot as soon as it appears.", RouteTarget.FISH),
+	PERMITS_COOK_17(1, "Cook all 17", "Cook all 17. If the colossal wave starts, tether to the totem pole.", RouteTarget.COOK),
+	PERMITS_LOAD_17(1, "Load exactly 17", "Load exactly 17 into the closest crate. Energy should drop to 4%.", RouteTarget.LOAD),
+	PERMITS_DOUSE_SHIP(1, "Douse the ship fire", "Douse the ship flame. Douse island fires too, or leave them to spread, but watch your tile.", RouteTarget.DOUSE),
+	PERMITS_FISH_19_FIRST(1, "Fish 19 harpoonfish", "Catch 19 as quickly as possible. Leave for the ship by 93% storm (90% if fires block the path).", RouteTarget.FISH),
+	PERMITS_COOK_19_FIRST(1, "Cook all 19", "Cook all 19. Leave for the ship by 93% storm (90% if fires block the path).", RouteTarget.COOK),
+	PERMITS_LOAD_19_FIRST(1, "Load all 19", "Load all 19. If short on time, load what you have; the helper tracks the rest.", RouteTarget.LOAD),
+	PERMITS_ATTACK_FIRST(1, "Attack Tempoross", "Fish the spirit pool until Tempoross regains its energy.", RouteTarget.ATTACK),
+	PERMITS_FISH_19_SECOND(2, "Fish 19 harpoonfish", "Catch 19. Optionally douse spreading fires with 5-10 buckets while waiting for double spots; drop extras.", RouteTarget.FISH),
+	PERMITS_COOK_19_SECOND(2, "Cook all 19", "Cook all 19 before the storm reaches 93%.", RouteTarget.COOK),
+	PERMITS_LOAD_19_SECOND(2, "Load all 19", "Load all 19 into the cannon.", RouteTarget.LOAD),
+	PERMITS_ATTACK_SECOND(2, "Attack Tempoross", "Damage Tempoross to below 60% essence, ideally below 50%.", RouteTarget.ATTACK),
+	PERMITS_FIREFIGHT(3, "Fight the fires", "Fill your inventory with buckets from the dock crate, cast Humidify, and douse fires around the island. Watch the storm.", RouteTarget.DOUSE),
+	PERMITS_FISH_2(3, "Catch 2 fish", "Catch 2 more fish before the storm gets too high. Cook them only if no fires remain.", RouteTarget.FISH),
+	PERMITS_LOAD_2(3, "Load 2 fish", "Load both fish into the cannon. Do not run through any fires.", RouteTarget.LOAD),
+	PERMITS_KILL(3, "Finish Tempoross", "Finish Tempoross at the spirit pool. Douse more fires only if there is plenty of time.", RouteTarget.ATTACK),
+	PERMITS_COMPLETE(3, "Leave", "Refill buckets of water for the next game, then select Leave on a Spirit Angler NPC.", RouteTarget.LEAVE);
 
 	private final int trip;
 	private final String title;

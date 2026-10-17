@@ -7,5 +7,6 @@ enum RouteTarget
 	COOK,
 	LOAD,
 	ATTACK,
+	DOUSE,
 	LEAVE
 }

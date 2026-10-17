@@ -29,6 +29,14 @@ dependencies {
 
 group = 'com.temporosssolo'
 
+// runelite-plugin.properties is the single source of truth for the version shown on the Plugin Hub.
+def pluginProperties = new Properties()
+file('runelite-plugin.properties').withInputStream { pluginProperties.load(it) }
+version = pluginProperties.getProperty('version', '')
+if (!(version.toString() ==~ /\d+\.\d+\.\d+/)) {
+	throw new GradleException("runelite-plugin.properties version must be MAJOR.MINOR.PATCH, was '${version}'")
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(11)

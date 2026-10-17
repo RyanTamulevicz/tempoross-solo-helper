@@ -10,6 +10,7 @@ Choose a strategy from the plugin setting named **Method**:
 
 - **No cooking (max XP)** — the existing fast no-cook route.
 - **Cooking Mix of XP and permits** — the cooking route based on the [OSRS Wiki solo strategy](https://oldschool.runescape.wiki/w/Tempoross/Strategies#Solo_cooking_(mix_of_XP_and_permits)).
+- **Cooking + firefighting (max permits)** — the 17/19/19/2 route from the [OSRS Wiki max permits strategy](https://oldschool.runescape.wiki/w/Tempoross/Strategies#Solo_cooking_+_firefighting_(max_permits)).
 
 Changing the method resets the current route. The selected method starts automatically when the Tempoross encounter HUD appears after zoning into a game.
 
@@ -65,6 +66,39 @@ Cooking checkpoints count only raw and cooked harpoonfish toward the 17/19/19/28
 
 On the final load, the helper counts 14 fish in the first hopper, then moves the highlight to the other hopper for the remaining 14. Fire activity never gates progression: step 4 keeps the fishing target available and advances when the first fish of the next batch is caught.
 
+## Cooking + firefighting (max permits)
+
+Setup before entering: a rune pouch with runes for Humidify, a rope (unless wearing the full spirit angler outfit), a hammer (unless using the Imcando hammer), 19 free slots, and the rest filled with buckets of water.
+
+### Phase 1
+
+1. Fish the nearest spot. After 9 fish, cook at the shrine until a double fish spot appears, then fish it up to 17.
+2. Cook all 17. If the colossal wave starts, tether to the totem pole.
+3. Load exactly 17 into the closest crate. Tempoross's energy drops to 4%.
+4. Douse the ship flame. Douse island fires too, or leave them to spread while watching your tile.
+5. Catch 19 fish.
+6. Cook all 19. Leave for the ship by 93% storm intensity (90% if fires block the path).
+7. Load all 19.
+8. Fish the spirit pool until Tempoross regains its energy.
+
+### Phase 2
+
+1. Catch 19 fish. Optionally take 5-10 buckets to douse spreading fires while waiting for double spots, then drop the extras.
+2. Cook all 19 before the storm reaches 93%.
+3. Load all 19.
+4. Damage Tempoross below 60% essence, ideally below 50%.
+
+### Phase 3
+
+1. Fill your inventory with buckets from the dock crate, cast Humidify, and douse fires around the island.
+2. Catch 2 fish before the storm gets too high. Cooking them is optional.
+3. Load both fish, avoiding fires.
+4. Finish Tempoross, then select **Leave**.
+
+The panel shows the storm intensity from the Tempoross HUD during the 19-fish, firefighting, and final-fish steps. When it reaches 90% during a 19-fish catch or cook step, the instruction switches to heading for the ship.
+
+If the storm forces you to load early, the helper counts the partial load from the fish or cook step, moves to the load step, and redirects the highlight to fishing or cooking until the shortfall is caught, cooked, and loaded. The final 2-fish load counts raw and cooked fish. The douse steps highlight the nearest fire anywhere, including the ship; they advance when you catch the first fish of the next batch, so fire tracking never blocks progression.
+
 ## Passive guidance
 
 - Spawned double-fish spots always outrank normal fishing spots and use a separate configurable priority color.
@@ -74,6 +108,16 @@ On the final load, the helper counts 14 fish in the first hopper, then moves the
 ## Panel and recovery
 
 The panel shows the selected method, trip, method-local step progress, AUTO or MANUAL state, instruction, and observed progress. Right-click it for **Previous step**, **Next step**, or **Reset route**. Optional hotkeys are available for the same actions.
+
+## Versioning
+
+The Plugin Hub shows the `version` from `runelite-plugin.properties`, and `build.gradle` reads it from there, so it is the only place to change. Use semantic versioning (`MAJOR.MINOR.PATCH`); the build fails on any other format.
+
+- **PATCH** — bug fixes and wording changes.
+- **MINOR** — new methods or features that keep existing config working.
+- **MAJOR** — changes that reset or break saved config.
+
+Bump the version and add a `CHANGELOG.md` entry in the same commit as the change, before updating the commit hash in the Plugin Hub.
 
 ## Development
 
